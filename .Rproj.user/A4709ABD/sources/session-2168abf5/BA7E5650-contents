@@ -1,8 +1,8 @@
 # Load Saved PCORnet CDM and MPI Databases
-# Connects to previously generated SQLite database files
+# Connects to previously generated DuckDB database files
 
 library(DBI)
-library(RSQLite)
+library(duckdb)
 
 # Load utility functions
 source("utility_functions.R")
@@ -10,8 +10,8 @@ source("utility_functions.R")
 cat("Loading saved databases...\n")
 
 # Connect to saved database files
-con_cdw <- dbConnect(RSQLite::SQLite(), "pcornet_cdw.db")
-con_mpi <- dbConnect(RSQLite::SQLite(), "mpi.db")
+con_cdw <- dbConnect(duckdb::duckdb(), dbdir = "pcornet_cdw.duckdb")
+con_mpi <- dbConnect(duckdb::duckdb(), dbdir = "mpi.duckdb")
 
 # Verify tables exist
 cat("\nCDW Tables:\n")

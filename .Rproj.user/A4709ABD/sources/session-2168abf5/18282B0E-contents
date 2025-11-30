@@ -13,7 +13,7 @@ with code in this repository.
 
 This repository contains a synthetic data generator for PCORnet Common
 Data Model (CDM) and Master Patient Index (MPI) databases. It creates
-in-memory SQLite databases populated with realistic test data for
+in-memory DuckDB databases populated with realistic test data for
 healthcare research and development.
 
 ## Running the Code
@@ -30,8 +30,8 @@ Patient Index (patient identification and linkage)
 ## Saving and Loading Databases
 
 The generation script automatically saves databases to disk files: -
-`pcornet_cdw.db` - Clinical Data Warehouse - `mpi.db` - Master Patient
-Index
+`pcornet_cdw.duckdb` - Clinical Data Warehouse - `mpi.duckdb` - Master
+Patient Index
 
 To reload previously generated databases without regenerating data:
 
@@ -132,7 +132,7 @@ dbGetQuery(con_cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")
 dbGetQuery(con_mpi, "SELECT COUNT(*) FROM Mpi")
 
 # Join data across databases - Option 1: Using ATTACH
-dbExecute(con_cdw, "ATTACH DATABASE 'mpi.db' AS mpi")
+dbExecute(con_cdw, "ATTACH 'mpi.duckdb' AS mpi")
 dbGetQuery(con_cdw, "
   SELECT d.PATID, e.First, e.Last, d.BIRTH_DATE
   FROM DEMOGRAPHIC d
@@ -151,4 +151,4 @@ inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
 
 ## Dependencies
 
-Required R packages: - DBI - RSQLite - dplyr - lubridate
+Required R packages: - DBI - duckdb - dplyr - lubridate

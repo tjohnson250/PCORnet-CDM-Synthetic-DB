@@ -1,0 +1,3651 @@
+# Database Schema Information
+# Generated: 2025-11-27 13:45:59.024617
+# Schema: dbo
+
+## Table: datavant_mrn_map
+
+### Columns:
+- original_uthealth_mrn: varbinary(8000) (NULL)
+- PatientId: varchar(500) (NULL)
+
+## Table: datavant_output
+
+### Columns:
+- PatientID: varchar(500) (NULL)
+- FirstName: varchar(500) (NULL)
+- LastName: varchar(500) (NULL)
+- DateOfBirth: varchar(500) (NULL)
+- Gender: varchar(500) (NULL)
+- PhoneNumberUS: varchar(500) (NULL)
+- AddressUSFirstLine: varchar(500) (NULL)
+- SSN: varchar(500) (NULL)
+
+## Table: EnterpriseRecords
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Bak
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Ext
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- CDM_PATID: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: char(1) (NULL)
+- CDM_SEX: varchar(8) (NULL)
+- CDM_RACE: varchar(8) (NULL)
+- CDM_HISPANIC: varchar(8) (NULL)
+- Race: varchar(32) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Email: varchar(256) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- EHR_STATE: varchar(128) (NULL)
+- EHR_LANGUAGE: varchar(128) (NULL)
+- EHR_MARITALSTATUS: varchar(128) (NULL)
+- EHR_CITY: varchar(256) (NULL)
+- EHR_ETHNICITY: varchar(128) (NULL)
+- OMBRaceCode: varchar(8) (NULL)
+- OMBEthnicCode: varchar(8) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- State: varchar(15) (NULL)
+
+## Table: EnterpriseRecords_Ext_OLD
+
+### Columns:
+- MPIUid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- CDM_PATID: varchar(700) (NOT NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: varchar(1) (NOT NULL)
+- PATIENT_IDE: varchar(200) (NULL)
+
+## Table: EnterpriseRecords_Test
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(2000) (NULL)
+- FirstSdx: varchar(2000) (NULL)
+- M: varchar(2000) (NULL)
+- Last: varchar(2000) (NULL)
+- LastSdx: varchar(2000) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(2000) (NULL)
+- G: varchar(2000) (NULL)
+- Addy: varchar(2000) (NULL)
+- Phone: varchar(2000) (NULL)
+- City: varchar(2000) (NULL)
+- Zip: varchar(2000) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecordsHistory
+
+### Columns:
+- UID: int (NOT NULL)
+- SnapshotId: bigint (NOT NULL)
+- First: varchar(-1) (NULL)
+- First_StartDt: date (NULL)
+- First_EndDt: date (NULL)
+- M: varchar(-1) (NULL)
+- M_StartDt: date (NULL)
+- M_EndDt: date (NULL)
+- Last: varchar(-1) (NULL)
+- Last_StartDt: date (NULL)
+- Last_EndDt: date (NULL)
+- DoB: varchar(-1) (NULL)
+- DoB_StartDt: date (NULL)
+- DoB_EndDt: date (NULL)
+- SSN: varchar(-1) (NULL)
+- SSN_StartDt: date (NULL)
+- SSN_EndDt: date (NULL)
+- G: varchar(-1) (NULL)
+- G_StartDt: date (NULL)
+- G_EndDt: date (NULL)
+- Addy: varchar(-1) (NULL)
+- Addy_StartDt: date (NULL)
+- Addy_EndDt: date (NULL)
+- Phone: varchar(-1) (NULL)
+- Phone_StartDt: date (NULL)
+- Phone_EndDt: date (NULL)
+- City: varchar(-1) (NULL)
+- City_StartDt: date (NULL)
+- City_EndDt: date (NULL)
+- Zip: varchar(-1) (NULL)
+- Zip_StartDt: date (NULL)
+- Zip_EndDt: date (NULL)
+- RNUM: bigint (NULL)
+
+## Table: extract_ALLSCRIPTS
+
+### Columns:
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: extract_AXIUM
+
+### Columns:
+- Status: varchar(-1) (NULL)
+- FirstTreatment: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- Open: varchar(-1) (NULL)
+- AXIUM_Patient: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- Race: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- AXIUM_Chart: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- Ethnic: varchar(-1) (NULL)
+
+## Table: extract_EPIC
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Email: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- HISPANIC: varchar(-1) (NULL)
+- MARITAL_STATUS: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- GENDER_IDENTITY: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- STATE: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- CITY: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- COUNTY: varchar(-1) (NULL)
+
+## Table: extract_GECBIONLY
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+
+## Table: extract_MHH_COVID
+
+### Columns:
+- Email: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: ManualReviewData
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewPair.id]
+- id: int (NOT NULL) [FK -> ManualReviewPair.id]
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(18) (NOT NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(18) (NULL)
+- Last: varchar(35) (NOT NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(9) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(71) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(5) (NULL)
+- lastEditDt: datetime (NULL)
+
+## Table: ManualReviewExtract_20250527
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NOT NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: ManualReviewPair
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+- id: int (NOT NULL)
+- isMatch: varchar(2) (NULL)
+
+## Table: ManualReviewSet
+
+### Columns:
+- reviewSet: int (NOT NULL) [PRIMARY KEY]
+- reviewSetCreateDt: datetime (NULL)
+- reviewSetUpdateDt: datetime (NULL)
+- reviewSetComments: varchar(-1) (NULL)
+- isCurrentSet: bit (NULL)
+
+## Table: ManualReviewSetCurrent
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+
+## Table: MergeRequest
+
+### Columns:
+- Id: int (NOT NULL)
+- Date: datetime (NOT NULL)
+- Uid1: varchar(20) (NOT NULL)
+- Uid2: varchar(20) (NOT NULL)
+- Status: varchar(1) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise_or_source
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_uid_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: Mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> MPI_Src.SRC]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> SourceRecords.Lid]
+- Uid: int (NOT NULL) [PRIMARY KEY] [FK -> EnterpriseRecords.Uid]
+- Organization: varchar(4) (NULL)
+
+## Table: MPI_20201222
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPI_Src
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID_SRC: varchar(128) (NOT NULL)
+- Description: varchar(-1) (NULL)
+
+## Table: MPI_Test
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Uid: int (NOT NULL) [PRIMARY KEY]
+
+## Table: Mpi20210113
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20221004
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230423
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230814
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPIHistory
+
+### Columns:
+- UID: varchar(40) (NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(40) (NULL)
+- FirstSeenDTTM: datetime (NULL)
+- LastUpdateDTTM: datetime (NULL)
+- NextUID: int (NULL)
+
+## Table: mpilog_deletedrecords
+
+### Columns:
+- UID: varchar(20) (NOT NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(20) (NULL)
+- DeleteDTTM: datetime (NOT NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NULL)
+- Last: varchar(128) (NULL)
+- First: varchar(64) (NULL)
+- LastSdx: varchar(5) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+
+## Table: Overwrite
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite_Old
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(100) (NOT NULL)
+- NewValue: varchar(100) (NOT NULL)
+
+## Table: Overwrite20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: patient_iorg_20210505
+
+### Columns:
+- PersonID: numeric (NOT NULL)
+- InternalOrganization: numeric (NOT NULL)
+- OrganizationMrn: varchar(20) (NOT NULL)
+- OtherNumber: varchar(255) (NOT NULL)
+- SortedMRN: varchar(20) (NOT NULL)
+- Other2: varchar(255) (NOT NULL)
+
+## Table: PatientRecords20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(8000) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(35) (NULL)
+- Last: varchar(8000) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(81) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: Reports
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20210113
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20221004
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230423
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230814
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230822
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20240108
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20241211
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20250319
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: SourceRecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- Organization: varchar(4) (NULL)
+
+## Table: SourceRecords_ColumnMap
+
+### Columns:
+- Src: varchar(32) (NOT NULL)
+- SourceColumn: varchar(64) (NOT NULL)
+- TargetColumn: varchar(64) (NOT NULL)
+- MappingLogic: varchar(16) (NOT NULL)
+- TargetType: varchar(64) (NULL)
+- TargetFunction: varchar(256) (NULL)
+
+## Table: SourceRecords_Ext
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID: varchar(20) (NOT NULL) [PRIMARY KEY]
+- UID: int (NULL)
+- RegisterDTTM: datetime (NULL)
+- MPICreateDTTM: datetime (NOT NULL)
+- MPIDeleteDTTM: datetime (NULL)
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- IDE: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- I2B2_PATIENT_IDE_STATUS: char(1) (NULL)
+- EpicOnly: char(1) (NULL)
+- IsActive: char(1) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- Email: varchar(256) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Race: varchar(32) (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- Open: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Status: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- CDM_PATID: varchar(221) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+
+## Table: SourceRecords20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Testpats20230816
+
+### Columns:
+- Src: varchar(20) (NULL)
+- Lid: varchar(20) (NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Transaction
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(40) (NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(40) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(40) (NULL)
+
+## Table: Transaction20210113
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20221004
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230423
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230814
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230822
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20240108
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211corrupt
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20250319
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: tyler_badmatch_mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: tyler_badmatch_sourcerecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+
+---
+## Summary
+Total tables: 88
+
+# Database Schema Information
+# Generated: 2025-11-27 13:45:59.024617
+# Schema: dbo
+
+## Table: datavant_mrn_map
+
+### Columns:
+- original_uthealth_mrn: varbinary(8000) (NULL)
+- PatientId: varchar(500) (NULL)
+
+## Table: datavant_output
+
+### Columns:
+- PatientID: varchar(500) (NULL)
+- FirstName: varchar(500) (NULL)
+- LastName: varchar(500) (NULL)
+- DateOfBirth: varchar(500) (NULL)
+- Gender: varchar(500) (NULL)
+- PhoneNumberUS: varchar(500) (NULL)
+- AddressUSFirstLine: varchar(500) (NULL)
+- SSN: varchar(500) (NULL)
+
+## Table: EnterpriseRecords
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Bak
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Ext
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- CDM_PATID: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: char(1) (NULL)
+- CDM_SEX: varchar(8) (NULL)
+- CDM_RACE: varchar(8) (NULL)
+- CDM_HISPANIC: varchar(8) (NULL)
+- Race: varchar(32) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Email: varchar(256) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- EHR_STATE: varchar(128) (NULL)
+- EHR_LANGUAGE: varchar(128) (NULL)
+- EHR_MARITALSTATUS: varchar(128) (NULL)
+- EHR_CITY: varchar(256) (NULL)
+- EHR_ETHNICITY: varchar(128) (NULL)
+- OMBRaceCode: varchar(8) (NULL)
+- OMBEthnicCode: varchar(8) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- State: varchar(15) (NULL)
+
+## Table: EnterpriseRecords_Ext_OLD
+
+### Columns:
+- MPIUid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- CDM_PATID: varchar(700) (NOT NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: varchar(1) (NOT NULL)
+- PATIENT_IDE: varchar(200) (NULL)
+
+## Table: EnterpriseRecords_Test
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(2000) (NULL)
+- FirstSdx: varchar(2000) (NULL)
+- M: varchar(2000) (NULL)
+- Last: varchar(2000) (NULL)
+- LastSdx: varchar(2000) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(2000) (NULL)
+- G: varchar(2000) (NULL)
+- Addy: varchar(2000) (NULL)
+- Phone: varchar(2000) (NULL)
+- City: varchar(2000) (NULL)
+- Zip: varchar(2000) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecordsHistory
+
+### Columns:
+- UID: int (NOT NULL)
+- SnapshotId: bigint (NOT NULL)
+- First: varchar(-1) (NULL)
+- First_StartDt: date (NULL)
+- First_EndDt: date (NULL)
+- M: varchar(-1) (NULL)
+- M_StartDt: date (NULL)
+- M_EndDt: date (NULL)
+- Last: varchar(-1) (NULL)
+- Last_StartDt: date (NULL)
+- Last_EndDt: date (NULL)
+- DoB: varchar(-1) (NULL)
+- DoB_StartDt: date (NULL)
+- DoB_EndDt: date (NULL)
+- SSN: varchar(-1) (NULL)
+- SSN_StartDt: date (NULL)
+- SSN_EndDt: date (NULL)
+- G: varchar(-1) (NULL)
+- G_StartDt: date (NULL)
+- G_EndDt: date (NULL)
+- Addy: varchar(-1) (NULL)
+- Addy_StartDt: date (NULL)
+- Addy_EndDt: date (NULL)
+- Phone: varchar(-1) (NULL)
+- Phone_StartDt: date (NULL)
+- Phone_EndDt: date (NULL)
+- City: varchar(-1) (NULL)
+- City_StartDt: date (NULL)
+- City_EndDt: date (NULL)
+- Zip: varchar(-1) (NULL)
+- Zip_StartDt: date (NULL)
+- Zip_EndDt: date (NULL)
+- RNUM: bigint (NULL)
+
+## Table: extract_ALLSCRIPTS
+
+### Columns:
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: extract_AXIUM
+
+### Columns:
+- Status: varchar(-1) (NULL)
+- FirstTreatment: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- Open: varchar(-1) (NULL)
+- AXIUM_Patient: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- Race: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- AXIUM_Chart: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- Ethnic: varchar(-1) (NULL)
+
+## Table: extract_EPIC
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Email: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- HISPANIC: varchar(-1) (NULL)
+- MARITAL_STATUS: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- GENDER_IDENTITY: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- STATE: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- CITY: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- COUNTY: varchar(-1) (NULL)
+
+## Table: extract_GECBIONLY
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+
+## Table: extract_MHH_COVID
+
+### Columns:
+- Email: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: ManualReviewData
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewPair.reviewSet]
+- id: int (NOT NULL) [FK -> ManualReviewPair.reviewSet]
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(18) (NOT NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(18) (NULL)
+- Last: varchar(35) (NOT NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(9) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(71) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(5) (NULL)
+- lastEditDt: datetime (NULL)
+
+## Table: ManualReviewExtract_20250527
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NOT NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: ManualReviewPair
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+- id: int (NOT NULL)
+- isMatch: varchar(2) (NULL)
+
+## Table: ManualReviewSet
+
+### Columns:
+- reviewSet: int (NOT NULL) [PRIMARY KEY]
+- reviewSetCreateDt: datetime (NULL)
+- reviewSetUpdateDt: datetime (NULL)
+- reviewSetComments: varchar(-1) (NULL)
+- isCurrentSet: bit (NULL)
+
+## Table: ManualReviewSetCurrent
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+
+## Table: MergeRequest
+
+### Columns:
+- Id: int (NOT NULL)
+- Date: datetime (NOT NULL)
+- Uid1: varchar(20) (NOT NULL)
+- Uid2: varchar(20) (NOT NULL)
+- Status: varchar(1) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise_or_source
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_uid_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: Mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> SourceRecords.Lid]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> SourceRecords.Src]
+- Uid: int (NOT NULL) [PRIMARY KEY] [FK -> EnterpriseRecords.Uid]
+- Organization: varchar(4) (NULL)
+
+## Table: MPI_20201222
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPI_Src
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID_SRC: varchar(128) (NOT NULL)
+- Description: varchar(-1) (NULL)
+
+## Table: MPI_Test
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Uid: int (NOT NULL) [PRIMARY KEY]
+
+## Table: Mpi20210113
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20221004
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230423
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230814
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPIHistory
+
+### Columns:
+- UID: varchar(40) (NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(40) (NULL)
+- FirstSeenDTTM: datetime (NULL)
+- LastUpdateDTTM: datetime (NULL)
+- NextUID: int (NULL)
+
+## Table: mpilog_deletedrecords
+
+### Columns:
+- UID: varchar(20) (NOT NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(20) (NULL)
+- DeleteDTTM: datetime (NOT NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NULL)
+- Last: varchar(128) (NULL)
+- First: varchar(64) (NULL)
+- LastSdx: varchar(5) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+
+## Table: Overwrite
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite_Old
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(100) (NOT NULL)
+- NewValue: varchar(100) (NOT NULL)
+
+## Table: Overwrite20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: patient_iorg_20210505
+
+### Columns:
+- PersonID: numeric (NOT NULL)
+- InternalOrganization: numeric (NOT NULL)
+- OrganizationMrn: varchar(20) (NOT NULL)
+- OtherNumber: varchar(255) (NOT NULL)
+- SortedMRN: varchar(20) (NOT NULL)
+- Other2: varchar(255) (NOT NULL)
+
+## Table: PatientRecords20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(8000) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(35) (NULL)
+- Last: varchar(8000) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(81) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: Reports
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20210113
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20221004
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230423
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230814
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230822
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20240108
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20241211
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20250319
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: SourceRecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- Organization: varchar(4) (NULL)
+
+## Table: SourceRecords_ColumnMap
+
+### Columns:
+- Src: varchar(32) (NOT NULL)
+- SourceColumn: varchar(64) (NOT NULL)
+- TargetColumn: varchar(64) (NOT NULL)
+- MappingLogic: varchar(16) (NOT NULL)
+- TargetType: varchar(64) (NULL)
+- TargetFunction: varchar(256) (NULL)
+
+## Table: SourceRecords_Ext
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID: varchar(20) (NOT NULL) [PRIMARY KEY]
+- UID: int (NULL)
+- RegisterDTTM: datetime (NULL)
+- MPICreateDTTM: datetime (NOT NULL)
+- MPIDeleteDTTM: datetime (NULL)
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- IDE: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- I2B2_PATIENT_IDE_STATUS: char(1) (NULL)
+- EpicOnly: char(1) (NULL)
+- IsActive: char(1) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- Email: varchar(256) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Race: varchar(32) (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- Open: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Status: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- CDM_PATID: varchar(221) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+
+## Table: SourceRecords20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Testpats20230816
+
+### Columns:
+- Src: varchar(20) (NULL)
+- Lid: varchar(20) (NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Transaction
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(40) (NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(40) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(40) (NULL)
+
+## Table: Transaction20210113
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20221004
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230423
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230814
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230822
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20240108
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211corrupt
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20250319
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: tyler_badmatch_mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: tyler_badmatch_sourcerecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+
+---
+## Summary
+Total tables: 88
+
+# Database Schema Information
+# Generated: 2025-11-27 13:45:59.024617
+# Schema: dbo
+
+## Table: datavant_mrn_map
+
+### Columns:
+- original_uthealth_mrn: varbinary(8000) (NULL)
+- PatientId: varchar(500) (NULL)
+
+## Table: datavant_output
+
+### Columns:
+- PatientID: varchar(500) (NULL)
+- FirstName: varchar(500) (NULL)
+- LastName: varchar(500) (NULL)
+- DateOfBirth: varchar(500) (NULL)
+- Gender: varchar(500) (NULL)
+- PhoneNumberUS: varchar(500) (NULL)
+- AddressUSFirstLine: varchar(500) (NULL)
+- SSN: varchar(500) (NULL)
+
+## Table: EnterpriseRecords
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Bak
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords_Ext
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- CDM_PATID: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: char(1) (NULL)
+- CDM_SEX: varchar(8) (NULL)
+- CDM_RACE: varchar(8) (NULL)
+- CDM_HISPANIC: varchar(8) (NULL)
+- Race: varchar(32) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Email: varchar(256) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- EHR_STATE: varchar(128) (NULL)
+- EHR_LANGUAGE: varchar(128) (NULL)
+- EHR_MARITALSTATUS: varchar(128) (NULL)
+- EHR_CITY: varchar(256) (NULL)
+- EHR_ETHNICITY: varchar(128) (NULL)
+- OMBRaceCode: varchar(8) (NULL)
+- OMBEthnicCode: varchar(8) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- State: varchar(15) (NULL)
+
+## Table: EnterpriseRecords_Ext_OLD
+
+### Columns:
+- MPIUid: int (NOT NULL) [PRIMARY KEY]
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- CDM_PATID: varchar(700) (NOT NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- EpicOnly: varchar(1) (NOT NULL)
+- PATIENT_IDE: varchar(200) (NULL)
+
+## Table: EnterpriseRecords_Test
+
+### Columns:
+- Uid: int (NOT NULL) [PRIMARY KEY]
+- First: varchar(2000) (NULL)
+- FirstSdx: varchar(2000) (NULL)
+- M: varchar(2000) (NULL)
+- Last: varchar(2000) (NULL)
+- LastSdx: varchar(2000) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(2000) (NULL)
+- G: varchar(2000) (NULL)
+- Addy: varchar(2000) (NULL)
+- Phone: varchar(2000) (NULL)
+- City: varchar(2000) (NULL)
+- Zip: varchar(2000) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecords20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: EnterpriseRecordsHistory
+
+### Columns:
+- UID: int (NOT NULL)
+- SnapshotId: bigint (NOT NULL)
+- First: varchar(-1) (NULL)
+- First_StartDt: date (NULL)
+- First_EndDt: date (NULL)
+- M: varchar(-1) (NULL)
+- M_StartDt: date (NULL)
+- M_EndDt: date (NULL)
+- Last: varchar(-1) (NULL)
+- Last_StartDt: date (NULL)
+- Last_EndDt: date (NULL)
+- DoB: varchar(-1) (NULL)
+- DoB_StartDt: date (NULL)
+- DoB_EndDt: date (NULL)
+- SSN: varchar(-1) (NULL)
+- SSN_StartDt: date (NULL)
+- SSN_EndDt: date (NULL)
+- G: varchar(-1) (NULL)
+- G_StartDt: date (NULL)
+- G_EndDt: date (NULL)
+- Addy: varchar(-1) (NULL)
+- Addy_StartDt: date (NULL)
+- Addy_EndDt: date (NULL)
+- Phone: varchar(-1) (NULL)
+- Phone_StartDt: date (NULL)
+- Phone_EndDt: date (NULL)
+- City: varchar(-1) (NULL)
+- City_StartDt: date (NULL)
+- City_EndDt: date (NULL)
+- Zip: varchar(-1) (NULL)
+- Zip_StartDt: date (NULL)
+- Zip_EndDt: date (NULL)
+- RNUM: bigint (NULL)
+
+## Table: extract_ALLSCRIPTS
+
+### Columns:
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: extract_AXIUM
+
+### Columns:
+- Status: varchar(-1) (NULL)
+- FirstTreatment: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- Open: varchar(-1) (NULL)
+- AXIUM_Patient: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- Race: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- AXIUM_Chart: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- Ethnic: varchar(-1) (NULL)
+
+## Table: extract_EPIC
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Email: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- HISPANIC: varchar(-1) (NULL)
+- MARITAL_STATUS: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- GENDER_IDENTITY: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- STATE: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- CITY: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+- COUNTY: varchar(-1) (NULL)
+
+## Table: extract_GECBIONLY
+
+### Columns:
+- LANGUAGE: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- EMAIL: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- IsDeceased: varchar(-1) (NULL)
+
+## Table: extract_MHH_COVID
+
+### Columns:
+- Email: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- Lid: varchar(128) (NOT NULL) [PRIMARY KEY]
+- SEX: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- ETHNICITY: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- RACE: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+
+## Table: ManualReviewData
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewPair.id]
+- id: int (NOT NULL) [FK -> ManualReviewPair.id]
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(18) (NOT NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(18) (NULL)
+- Last: varchar(35) (NOT NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(9) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(71) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(5) (NULL)
+- lastEditDt: datetime (NULL)
+
+## Table: ManualReviewExtract_20250527
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NOT NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: ManualReviewPair
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+- id: int (NOT NULL)
+- isMatch: varchar(2) (NULL)
+
+## Table: ManualReviewSet
+
+### Columns:
+- reviewSet: int (NOT NULL) [PRIMARY KEY]
+- reviewSetCreateDt: datetime (NULL)
+- reviewSetUpdateDt: datetime (NULL)
+- reviewSetComments: varchar(-1) (NULL)
+- isCurrentSet: bit (NULL)
+
+## Table: ManualReviewSetCurrent
+
+### Columns:
+- reviewSet: int (NOT NULL) [FK -> ManualReviewSet.reviewSet]
+
+## Table: MergeRequest
+
+### Columns:
+- Id: int (NOT NULL)
+- Date: datetime (NOT NULL)
+- Uid1: varchar(20) (NOT NULL)
+- Uid2: varchar(20) (NOT NULL)
+- Status: varchar(1) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_mpi_not_in_enterprise_or_source
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: missing202304_uid_not_in_enterprise
+
+### Columns:
+- uid: int (NOT NULL)
+- lid: varchar(20) (NOT NULL)
+- src: varchar(20) (NOT NULL)
+
+## Table: Mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> SourceRecords.Src]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY] [FK -> SourceRecords.Lid]
+- Uid: int (NOT NULL) [PRIMARY KEY] [FK -> EnterpriseRecords.Uid]
+- Organization: varchar(4) (NULL)
+
+## Table: MPI_20201222
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPI_Src
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID_SRC: varchar(128) (NOT NULL)
+- Description: varchar(-1) (NULL)
+
+## Table: MPI_Test
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Uid: int (NOT NULL) [PRIMARY KEY]
+
+## Table: Mpi20210113
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20221004
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230423
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230814
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: Mpi20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: MPIHistory
+
+### Columns:
+- UID: varchar(40) (NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(40) (NULL)
+- FirstSeenDTTM: datetime (NULL)
+- LastUpdateDTTM: datetime (NULL)
+- NextUID: int (NULL)
+
+## Table: mpilog_deletedrecords
+
+### Columns:
+- UID: varchar(20) (NOT NULL)
+- Src: varchar(20) (NULL)
+- LID: varchar(20) (NULL)
+- DeleteDTTM: datetime (NOT NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NULL)
+- Last: varchar(128) (NULL)
+- First: varchar(64) (NULL)
+- LastSdx: varchar(5) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+
+## Table: Overwrite
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite_Old
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(100) (NOT NULL)
+- NewValue: varchar(100) (NOT NULL)
+
+## Table: Overwrite20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20230822
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20240108
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(-1) (NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20241211corrupt
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: Overwrite20250319
+
+### Columns:
+- Uid: int (NOT NULL)
+- Tid: int (NOT NULL)
+- Column: varchar(32) (NOT NULL)
+- Date: datetime (NOT NULL)
+- OldValue: varchar(-1) (NULL)
+- NewValue: varchar(-1) (NULL)
+
+## Table: patient_iorg_20210505
+
+### Columns:
+- PersonID: numeric (NOT NULL)
+- InternalOrganization: numeric (NOT NULL)
+- OrganizationMrn: varchar(20) (NOT NULL)
+- OtherNumber: varchar(255) (NOT NULL)
+- SortedMRN: varchar(20) (NOT NULL)
+- Other2: varchar(255) (NOT NULL)
+
+## Table: PatientRecords20210113
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(8000) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(35) (NULL)
+- Last: varchar(8000) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(81) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20221004
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230423
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: PatientRecords20230814
+
+### Columns:
+- Uid: int (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(5) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(5) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- isActive: int (NOT NULL)
+
+## Table: Reports
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20210113
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20221004
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230423
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230814
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20230822
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20240108
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20241211
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: Reports20250319
+
+### Columns:
+- Date: datetime (NULL)
+- QueryType: varchar(50) (NULL)
+- Field: nvarchar(250) (NULL)
+- Value: int (NULL)
+
+## Table: SourceRecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL) [PRIMARY KEY]
+- Lid: varchar(20) (NOT NULL) [PRIMARY KEY]
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+- Organization: varchar(4) (NULL)
+
+## Table: SourceRecords_ColumnMap
+
+### Columns:
+- Src: varchar(32) (NOT NULL)
+- SourceColumn: varchar(64) (NOT NULL)
+- TargetColumn: varchar(64) (NOT NULL)
+- MappingLogic: varchar(16) (NOT NULL)
+- TargetType: varchar(64) (NULL)
+- TargetFunction: varchar(256) (NULL)
+
+## Table: SourceRecords_Ext
+
+### Columns:
+- SRC: varchar(20) (NOT NULL) [PRIMARY KEY]
+- LID: varchar(20) (NOT NULL) [PRIMARY KEY]
+- UID: int (NULL)
+- RegisterDTTM: datetime (NULL)
+- MPICreateDTTM: datetime (NOT NULL)
+- MPIDeleteDTTM: datetime (NULL)
+- MPIUpdateDTTM: datetime (NOT NULL)
+- MRN_Encoded: varchar(200) (NULL)
+- IDE: varchar(700) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- I2B2_PATIENT_IDE_STATUS: char(1) (NULL)
+- EpicOnly: char(1) (NULL)
+- IsActive: char(1) (NULL)
+- IsDeceased: char(1) (NULL)
+- DeceasedDTTM: datetime (NULL)
+- Email: varchar(256) (NULL)
+- Ethnicity: varchar(32) (NULL)
+- GENDER_IDENTITY: varchar(32) (NULL)
+- Language: varchar(32) (NULL)
+- MARITAL_STATUS: varchar(20) (NULL)
+- Race: varchar(32) (NULL)
+- SEXUAL_ORIENTATION: varchar(32) (NULL)
+- BILLING_UPDATE_DT: varchar(-1) (NULL)
+- BIRTH_DATE: varchar(-1) (NULL)
+- CDM_HISPANIC: varchar(-1) (NULL)
+- CDM_RACE: varchar(-1) (NULL)
+- CDM_SEX: varchar(-1) (NULL)
+- City: varchar(-1) (NULL)
+- Country: varchar(-1) (NULL)
+- EHR_CITY: varchar(-1) (NULL)
+- EHR_ETHNICITY: varchar(-1) (NULL)
+- EHR_LANGUAGE: varchar(-1) (NULL)
+- EHR_MARITALSTATUS: varchar(-1) (NULL)
+- EHR_STATE: varchar(-1) (NULL)
+- EHR_UPDATE_DTTM: varchar(-1) (NULL)
+- Insurance: varchar(-1) (NULL)
+- InsuranceClass: varchar(-1) (NULL)
+- InsuranceGroup: varchar(-1) (NULL)
+- IS_VALID: varchar(-1) (NULL)
+- IsBTG: varchar(-1) (NULL)
+- LastClaimDate: varchar(-1) (NULL)
+- LastEditDTTM: varchar(-1) (NULL)
+- LastEditedDTTM: varchar(-1) (NULL)
+- LastVisit: varchar(-1) (NULL)
+- MaritalStatus: varchar(-1) (NULL)
+- MRN: varchar(-1) (NULL)
+- OMBEthnicCode: varchar(-1) (NULL)
+- OMBRaceCode: varchar(-1) (NULL)
+- Open: varchar(-1) (NULL)
+- PatientId: varchar(-1) (NULL)
+- RECORD_STATE: varchar(-1) (NULL)
+- SEX: varchar(-1) (NULL)
+- State: varchar(-1) (NULL)
+- Status: varchar(-1) (NULL)
+- PAT_ID: varchar(-1) (NULL)
+- CDM_PATID: varchar(221) (NULL)
+- CDM_GENDER_IDENTITY: varchar(2) (NULL)
+- CDM_PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- CDM_SEXUAL_ORIENTATION: varchar(2) (NULL)
+
+## Table: SourceRecords20230822
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20240108
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20241211corrupt
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: SourceRecords20250319
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Testpats20230816
+
+### Columns:
+- Src: varchar(20) (NULL)
+- Lid: varchar(20) (NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+## Table: Transaction
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(40) (NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(40) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(40) (NULL)
+
+## Table: Transaction20210113
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20221004
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230423
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230814
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20230822
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20240108
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20241211corrupt
+
+### Columns:
+- Tid: int (NOT NULL) [PRIMARY KEY]
+- Type: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL) [PRIMARY KEY]
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: Transaction20250319
+
+### Columns:
+- Tid: int (NOT NULL)
+- Type: varchar(10) (NOT NULL)
+- OnId: varchar(20) (NOT NULL)
+- Date: datetime (NOT NULL)
+- FromSrc: varchar(20) (NULL)
+- FromId: varchar(20) (NULL)
+- Code: varchar(41) (NULL)
+- ToId: varchar(20) (NULL)
+
+## Table: tyler_badmatch_mpi
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- Uid: int (NOT NULL)
+
+## Table: tyler_badmatch_sourcerecords
+
+### Columns:
+- Src: varchar(20) (NOT NULL)
+- Lid: varchar(20) (NOT NULL)
+- First: varchar(64) (NULL)
+- FirstSdx: varchar(4) (NULL)
+- M: varchar(64) (NULL)
+- Last: varchar(128) (NULL)
+- LastSdx: varchar(4) (NULL)
+- DoB: datetime (NULL)
+- SSN: varchar(11) (NULL)
+- G: varchar(1) (NULL)
+- Addy: varchar(128) (NULL)
+- Phone: varchar(13) (NULL)
+- City: varchar(35) (NULL)
+- Zip: varchar(10) (NULL)
+- LastEditDTTM: datetime (NULL)
+
+
+---
+## Summary
+Total tables: 88
+

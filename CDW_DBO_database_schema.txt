@@ -1,0 +1,1394 @@
+# Database Schema Information
+# Generated: 2025-11-27 13:43:37.854131
+# Schema: dbo
+
+## Table: APPOINTMENT
+
+### Columns:
+- PATID: varchar(700) (NULL)
+- ENCOUNTERID: varchar(700) (NULL)
+- CREATE_DATE: date (NULL)
+- APPT_DATE: date (NULL)
+- APPT_TIME: varchar(5) (NULL)
+- APPT_STATUS: varchar(24) (NULL)
+- APPT_LOCATION: varchar(2000) (NULL)
+- PROVIDERID: varchar(700) (NULL)
+- PROVIDER_NAME: varchar(256) (NULL)
+- uid: bigint (NULL)
+- mrn: varchar(64) (NULL)
+- PatientName: varchar(256) (NULL)
+- CDW_Source: varchar(32) (NOT NULL)
+- APPT_ID: varchar(64) (NOT NULL) [PRIMARY KEY]
+- CDW_UpdatedDTTM: datetime (NULL)
+
+## Table: CDW_COLUMN_MAP
+
+### Columns:
+- Source: varchar(10) (NOT NULL)
+- SourceColumn: varchar(16) (NOT NULL)
+- SourceName: varchar(255) (NULL)
+- SourceValue: varchar(256) (NOT NULL)
+- CDMTable: varchar(13) (NULL)
+- CDMColumn: varchar(32) (NULL)
+- CDMName: varchar(255) (NULL)
+- CDMValue: varchar(25) (NULL)
+
+## Table: CONDITION
+
+### Columns:
+- CONDITION: varchar(18) (NOT NULL)
+- CONDITION_SOURCE: varchar(2) (NOT NULL)
+- CONDITION_STATUS: varchar(2) (NULL)
+- CONDITION_TYPE: varchar(2) (NOT NULL)
+- CONDITIONID: varchar(700) (NOT NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL) [FK -> ENCOUNTER.ENCOUNTERID]
+- ONSET_DATE: date (NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- RAW_CONDITION: varchar(-1) (NULL)
+- RAW_CONDITION_SOURCE: varchar(-1) (NULL)
+- RAW_CONDITION_STATUS: varchar(-1) (NULL)
+- RAW_CONDITION_TYPE: varchar(-1) (NULL)
+- REPORT_DATE: date (NULL)
+- RESOLVE_DATE: date (NULL)
+- RAW_ENCOUNTERID: varchar(700) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: COUNTY_FIPS
+
+### Columns:
+- FIPScode: varchar(50) (NULL)
+- name: varchar(75) (NULL)
+
+## Table: DEATH
+
+### Columns:
+- DEATH_DATE: date (NULL)
+- DEATH_DATE_IMPUTE: varchar(2) (NULL)
+- DEATH_MATCH_CONFIDENCE: varchar(2) (NULL)
+- DEATH_SOURCE: varchar(2) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- GPC_FLAG: char(1) (NOT NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: DEATH_CAUSE
+
+### Columns:
+- DEATH_CAUSE: varchar(8) (NOT NULL) [PRIMARY KEY]
+- DEATH_CAUSE_CODE: varchar(2) (NOT NULL) [PRIMARY KEY]
+- DEATH_CAUSE_CONFIDENCE: varchar(2) (NULL)
+- DEATH_CAUSE_SOURCE: varchar(2) (NOT NULL) [PRIMARY KEY]
+- DEATH_CAUSE_TYPE: varchar(2) (NOT NULL) [PRIMARY KEY]
+- PATID: varchar(700) (NOT NULL) [PRIMARY KEY] [FK -> DEMOGRAPHIC.PATID]
+- GPC_FLAG: char(1) (NOT NULL)
+
+## Table: DEATH_GE
+
+### Columns:
+- PATID: varchar(200) (NULL)
+- DEATH_DATE: date (NULL)
+- DEATH_DATE_IMPUTE: varchar(1) (NOT NULL)
+- DEATH_SOURCE: varchar(1) (NOT NULL)
+- DEATH_MATCH_CONFIDENCE: varchar(1) (NOT NULL)
+
+## Table: DEGAUSS_GEOCODE
+
+### Columns:
+- PATID: varchar(50) (NULL)
+- address: varchar(-1) (NULL)
+- matched_street: varchar(200) (NULL)
+- matched_zip: varchar(50) (NULL)
+- matched_city: varchar(100) (NULL)
+- matched_state: varchar(50) (NULL)
+- lat: varchar(50) (NULL)
+- lon: varchar(50) (NULL)
+- score: varchar(50) (NULL)
+- precision: varchar(100) (NULL)
+- street1: varchar(100) (NULL)
+- street2: varchar(100) (NULL)
+- geocode_result: varchar(100) (NULL)
+- address_completeness: tinyint (NULL)
+
+## Table: DEMOGRAPHIC
+
+### Columns:
+- PATID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- addressLine1: varchar(40) (NULL)
+- addressLine2: varchar(40) (NULL)
+- AgeSafe: varchar(30) (NULL)
+- BIOBANK_FLAG: varchar(1) (NULL)
+- BIRTH_DATE: date (NULL)
+- BIRTH_TIME: varchar(5) (NULL)
+- city: varchar(100) (NULL)
+- Email: varchar(80) (NULL)
+- firstName: varchar(50) (NULL)
+- GENDER_IDENTITY: varchar(2) (NULL)
+- HISPANIC: varchar(2) (NULL)
+- insurance: varchar(255) (NULL)
+- insuranceGroup: varchar(35) (NULL)
+- isDeceased: char(1) (NULL)
+- language: varchar(255) (NULL)
+- LastEditedDTTM: datetime (NULL)
+- lastName: varchar(50) (NULL)
+- maritalStatus: nvarchar(100) (NULL)
+- PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- PrimaryLanguage: varchar(255) (NULL)
+- RACE: varchar(2) (NULL)
+- RAW_GENDER_IDENTITY: varchar(-1) (NULL)
+- RAW_HISPANIC: varchar(-1) (NULL)
+- RAW_PAT_PREF_LANGUAGE_SPOKEN: varchar(-1) (NULL)
+- RAW_RACE: varchar(-1) (NULL)
+- RAW_SEX: varchar(-1) (NULL)
+- RAW_SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- SEX: varchar(2) (NULL)
+- SEXUAL_ORIENTATION: varchar(2) (NULL)
+- ssn: varchar(16) (NULL)
+- state: varchar(100) (NULL)
+- zipCode: char(10) (NULL)
+- zipSafe: char(13) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RACE_DESCRIPTION: varchar(-1) (NULL)
+- UID: int (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- CARE_EVERYWHERE: char(1) (NULL)
+- RACE_ETH_MISSING: varchar(2) (NULL)
+- RACE_ETH_AI_AN: varchar(1) (NULL)
+- RACE_ETH_ASIAN: varchar(1) (NULL)
+- RACE_ETH_BLACK: varchar(1) (NULL)
+- RACE_ETH_HISPANIC: varchar(1) (NULL)
+- RACE_ETH_ME_NA: varchar(1) (NULL)
+- RACE_ETH_NH_PI: varchar(1) (NULL)
+- RACE_ETH_WHITE: varchar(1) (NULL)
+
+## Table: demographic_cdw_old
+
+### Columns:
+- addressLine1: varchar(40) (NULL)
+- addressLine2: varchar(40) (NULL)
+- AgeSafe: varchar(30) (NULL)
+- BIOBANK_FLAG: varchar(1) (NULL)
+- BIRTH_DATE: date (NULL)
+- BIRTH_TIME: varchar(5) (NULL)
+- city: varchar(100) (NULL)
+- Email: varchar(80) (NULL)
+- firstName: varchar(50) (NULL)
+- GENDER_IDENTITY: varchar(2) (NULL)
+- HISPANIC: varchar(2) (NULL)
+- insurance: varchar(255) (NULL)
+- insuranceGroup: varchar(35) (NULL)
+- isDeceased: char(1) (NULL)
+- language: varchar(255) (NULL)
+- LastEditedDTTM: datetime (NULL)
+- lastName: varchar(50) (NULL)
+- maritalStatus: nvarchar(100) (NULL)
+- mrn: varchar(30) (NULL)
+- PAT_PREF_LANGUAGE_SPOKEN: varchar(4) (NOT NULL)
+- PATID: varchar(700) (NOT NULL)
+- patientId: int (NULL)
+- PrimaryLanguage: varchar(255) (NULL)
+- RACE: varchar(2) (NULL)
+- RAW_GENDER_IDENTITY: varchar(-1) (NULL)
+- RAW_HISPANIC: varchar(-1) (NULL)
+- RAW_PAT_PREF_LANGUAGE_SPOKEN: varchar(-1) (NULL)
+- RAW_RACE: varchar(-1) (NULL)
+- RAW_SEX: varchar(-1) (NULL)
+- RAW_SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- SEX: varchar(2) (NULL)
+- SEXUAL_ORIENTATION: varchar(2) (NULL)
+- ssn: varchar(16) (NULL)
+- state: varchar(100) (NULL)
+- zipCode: char(10) (NULL)
+- zipSafe: char(13) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RACE_DESCRIPTION: varchar(-1) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- UID: int (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- CARE_EVERYWHERE: char(1) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+- MPI_LID: varchar(32) (NULL)
+
+## Table: DEMOGRAPHIC_ERE
+
+### Columns:
+- PATID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- addressLine1: varchar(40) (NULL)
+- addressLine2: varchar(40) (NULL)
+- AgeSafe: varchar(30) (NULL)
+- BIOBANK_FLAG: varchar(1) (NULL)
+- BIRTH_DATE: date (NULL)
+- BIRTH_TIME: varchar(5) (NULL)
+- city: varchar(100) (NULL)
+- Email: varchar(80) (NULL)
+- firstName: varchar(50) (NULL)
+- GENDER_IDENTITY: varchar(2) (NULL)
+- HISPANIC: varchar(2) (NULL)
+- insurance: varchar(255) (NULL)
+- insuranceGroup: varchar(35) (NULL)
+- isDeceased: char(1) (NULL)
+- language: varchar(255) (NULL)
+- LastEditedDTTM: datetime (NULL)
+- lastName: varchar(50) (NULL)
+- maritalStatus: nvarchar(100) (NULL)
+- PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- PrimaryLanguage: varchar(255) (NULL)
+- RACE: varchar(2) (NULL)
+- RAW_GENDER_IDENTITY: varchar(-1) (NULL)
+- RAW_HISPANIC: varchar(-1) (NULL)
+- RAW_PAT_PREF_LANGUAGE_SPOKEN: varchar(-1) (NULL)
+- RAW_RACE: varchar(-1) (NULL)
+- RAW_SEX: varchar(-1) (NULL)
+- RAW_SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- SEX: varchar(2) (NULL)
+- SEXUAL_ORIENTATION: varchar(2) (NULL)
+- ssn: varchar(16) (NULL)
+- state: varchar(100) (NULL)
+- zipCode: char(10) (NULL)
+- zipSafe: char(13) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RACE_DESCRIPTION: varchar(-1) (NULL)
+- UID: int (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- CARE_EVERYWHERE: char(1) (NULL)
+
+## Table: DEMOGRAPHIC_UNIQUE
+
+### Columns:
+- UID: int (NOT NULL) [PRIMARY KEY]
+- BIRTH_DATE: date (NULL)
+- HISPANIC: varchar(2) (NULL)
+- RACE: varchar(-1) (NULL)
+- SEX: varchar(2) (NULL)
+- isDeceased: varchar(1) (NULL)
+- DEATH_DATE: date (NULL)
+- Language: varchar(3) (NULL)
+- MaritalStatus: nvarchar(100) (NULL)
+
+## Table: DIAGNOSIS
+
+### Columns:
+- ADMIT_DATE: date (NOT NULL)
+- DIAGNOSISID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- DX: varchar(18) (NOT NULL)
+- DX_DATE: date (NULL)
+- DX_ORIGIN: varchar(2) (NULL)
+- DX_POA: varchar(2) (NULL)
+- DX_SOURCE: varchar(2) (NOT NULL)
+- DX_TYPE: varchar(2) (NOT NULL)
+- ENC_TYPE: varchar(2) (NOT NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PDX: varchar(2) (NULL)
+- PROVIDERID: varchar(700) (NOT NULL) [FK -> PROVIDER.PROVIDERID]
+- RAW_DX: varchar(-1) (NULL)
+- RAW_DX_POA: varchar(-1) (NULL)
+- RAW_DX_SOURCE: varchar(-1) (NULL)
+- RAW_DX_TYPE: varchar(-1) (NULL)
+- RAW_PDX: varchar(-1) (NULL)
+- RAW_ENCOUNTERID: varchar(50) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: DISCHARGED_DECEASED_MHH
+
+### Columns:
+- PATID: varchar(200) (NULL)
+- PERSON_ID: bigint (NULL)
+- EVENT_END_DT_TM: datetime (NULL)
+- RESULT_VAL: varchar(500) (NULL)
+- Deceased: varchar(1) (NOT NULL)
+- OTHER_PATID: varchar(200) (NOT NULL)
+
+## Table: DISPENSED_MEDS_CACHE
+
+### Columns:
+- PAT_ID: varchar(200) (NOT NULL) [PRIMARY KEY]
+- document_id: int (NOT NULL) [PRIMARY KEY]
+- writtendate: date (NULL)
+- dispensedate: date (NOT NULL) [PRIMARY KEY]
+- EXT_MED_ERX_ID: int (NOT NULL) [PRIMARY KEY]
+- ext_med_day_supply: int (NULL)
+- ext_drug_disp_amt: int (NULL)
+- ext_drug_unit_txt: varchar(-1) (NULL)
+- EXT_MED_MSG_TYPE_C: int (NOT NULL) [PRIMARY KEY]
+
+## Table: DISPENSING
+
+### Columns:
+- DISPENSE_AMT: numeric (NULL)
+- DISPENSE_DATE: date (NOT NULL)
+- DISPENSE_DOSE_DISP: numeric (NULL)
+- DISPENSE_DOSE_DISP_UNIT: varchar(-1) (NULL)
+- DISPENSE_ROUTE: varchar(-1) (NULL)
+- DISPENSE_SOURCE: varchar(2) (NULL)
+- DISPENSE_SUP: numeric (NULL)
+- DISPENSINGID: varchar(700) (NOT NULL)
+- NDC: varchar(11) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PRESCRIBINGID: varchar(700) (NULL)
+- RAW_DISPENSE_DOSE_DISP: varchar(-1) (NULL)
+- RAW_DISPENSE_DOSE_DISP_UNIT: varchar(-1) (NULL)
+- RAW_DISPENSE_ROUTE: varchar(-1) (NULL)
+- RAW_NDC: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RAW_DISP_MED_NAME: varchar(200) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: ENCOUNTER
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NULL) [FK -> DEMOGRAPHIC.PATID]
+- ADMIT_DATE: date (NOT NULL)
+- ADMIT_TIME: varchar(5) (NULL)
+- DISCHARGE_DATE: date (NULL)
+- DISCHARGE_TIME: varchar(5) (NULL)
+- PROVIDERID: varchar(700) (NULL) [FK -> PROVIDER.PROVIDERID]
+- FACILITY_LOCATION: varchar(5) (NULL)
+- ENC_TYPE: varchar(2) (NOT NULL)
+- FACILITYID: varchar(-1) (NULL)
+- DISCHARGE_DISPOSITION: varchar(2) (NULL)
+- DISCHARGE_STATUS: varchar(2) (NULL)
+- DRG: varchar(3) (NULL)
+- DRG_TYPE: varchar(2) (NULL)
+- ADMITTING_SOURCE: varchar(2) (NULL)
+- RAW_SITEID: varchar(-1) (NULL)
+- RAW_ENC_TYPE: varchar(-1) (NULL)
+- RAW_DISCHARGE_DISPOSITION: varchar(-1) (NULL)
+- RAW_DISCHARGE_STATUS: varchar(-1) (NULL)
+- RAW_DRG_TYPE: varchar(-1) (NULL)
+- RAW_ADMITTING_SOURCE: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- FACILITY_TYPE: varchar(-1) (NULL)
+- PAYER_TYPE_PRIMARY: varchar(5) (NULL)
+- PAYER_TYPE_SECONDARY: varchar(5) (NULL)
+- RAW_ENCOUNTERID: varchar(700) (NULL)
+- RAW_FACILITY_TYPE: varchar(-1) (NULL)
+- RAW_PAYER_ID_PRIMARY: varchar(-1) (NULL)
+- RAW_PAYER_ID_SECONDARY: varchar(-1) (NULL)
+- RAW_PAYER_NAME_PRIMARY: varchar(-1) (NULL)
+- RAW_PAYER_NAME_SECONDARY: varchar(-1) (NULL)
+- RAW_PAYER_TYPE_PRIMARY: varchar(-1) (NULL)
+- RAW_PAYER_TYPE_SECONDARY: varchar(-1) (NULL)
+- IS_LEGACY_IMPORT: varchar(1) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- CARE_EVERYWHERE: char(1) (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: ENCOUNTER_ADMISSION
+
+### Columns:
+- PATID: varchar(700) (NULL)
+- ADMIT_ENCOUNTERID: varchar(200) (NOT NULL) [PRIMARY KEY]
+- ADMIT_DATE: date (NULL)
+- DISCHARGE_DATE: date (NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL) [PRIMARY KEY]
+
+## Table: ENCOUNTER_ID_LIST
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NULL)
+
+## Table: ENCOUNTER_MAPPING_NEW
+
+### Columns:
+- ENCOUNTER_NUM: bigint (NOT NULL)
+- ENCOUNTER_IDE: varchar(200) (NOT NULL)
+- ENCOUNTER_IDE_SOURCE: varchar(50) (NOT NULL)
+- PATIENT_IDE: varchar(200) (NOT NULL)
+- PATIENT_IDE_SOURCE: varchar(50) (NOT NULL)
+- ENCOUNTER_IDE_STATUS: varchar(50) (NOT NULL)
+- UPLOAD_DATE: datetime (NULL)
+- UPDATE_DATE: datetime (NULL)
+- DOWNLOAD_DATE: datetime (NULL)
+- IMPORT_DATE: datetime (NOT NULL)
+- SOURCESYSTEM_CD: varchar(50) (NOT NULL)
+- UPLOAD_ID: numeric (NULL)
+
+## Table: ENROLLMENT
+
+### Columns:
+- CHART: varchar(1) (NULL)
+- ENR_BASIS: varchar(1) (NOT NULL)
+- ENR_END_DATE: date (NULL)
+- ENR_START_DATE: date (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: EXTERNAL_MEDS
+
+### Columns:
+- EXTMEDID: varchar(50) (NOT NULL)
+- PATID: varchar(700) (NOT NULL)
+- ENCOUNTERID: varchar(700) (NULL)
+- RX_PROVIDERID: varchar(700) (NULL)
+- EXT_RECORD_DATE: date (NULL)
+- EXT_PAT_START_DATE: date (NULL)
+- EXT_END_DATE: date (NULL)
+- EXT_PAT_END_DATE: date (NULL)
+- EXT_DOSE: float (NULL)
+- EXT_DOSE_ORDERED_UNIT: varchar(20) (NULL)
+- EXT_DOSE_FORM: varchar(50) (NULL)
+- EXT_ROUTE: varchar(50) (NULL)
+- EXT_BASIS: char(2) (NULL)
+- RXNORM_CUI: varchar(8) (NULL)
+- EXTMED_SOURCE: char(2) (NULL)
+- RAW_EXT_MED_NAME: varchar(255) (NULL)
+- RAW_RXNORM_CUI: varchar(50) (NULL)
+- RAW_EXT_NDC: varchar(50) (NULL)
+- RAW_EXT_DOSE: varchar(50) (NULL)
+- RAW_EXT_DOSE_UNIT: varchar(50) (NULL)
+- RAW_EXT_ROUTE: varchar(50) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NULL)
+
+## Table: HARVEST
+
+### Columns:
+- ADDRESS_PERIOD_END_MGMT: varchar(2) (NULL)
+- ADDRESS_PERIOD_START_MGMT: varchar(2) (NULL)
+- ADMIT_DATE_MGMT: varchar(2) (NULL)
+- BIRTH_DATE_MGMT: varchar(2) (NULL)
+- CDM_VERSION: varchar(3) (NULL)
+- DATAMART_CLAIMS: varchar(2) (NULL)
+- DATAMART_EHR: varchar(2) (NULL)
+- DATAMART_NAME: varchar(20) (NULL)
+- DATAMART_PLATFORM: varchar(2) (NULL)
+- DATAMARTID: varchar(10) (NOT NULL) [PRIMARY KEY]
+- DEATH_DATE_MGMT: varchar(2) (NULL)
+- DISCHARGE_DATE_MGMT: varchar(2) (NULL)
+- DISPENSE_DATE_MGMT: varchar(2) (NULL)
+- DX_DATE_MGMT: varchar(2) (NULL)
+- ENR_END_DATE_MGMT: varchar(2) (NULL)
+- ENR_START_DATE_MGMT: varchar(2) (NULL)
+- LAB_ORDER_DATE_MGMT: varchar(2) (NULL)
+- MEASURE_DATE_MGMT: varchar(2) (NULL)
+- MEDADMIN_START_DATE_MGMT: varchar(2) (NULL)
+- MEDADMIN_STOP_DATE_MGMT: varchar(2) (NULL)
+- NETWORK_NAME: varchar(20) (NULL)
+- NETWORKID: varchar(10) (NOT NULL) [PRIMARY KEY]
+- OBSCLIN_START_DATE_MGMT: varchar(2) (NULL)
+- OBSCLIN_STOP_DATE_MGMT: varchar(2) (NULL)
+- OBSGEN_START_DATE_MGMT: varchar(2) (NULL)
+- OBSGEN_STOP_DATE_MGMT: varchar(2) (NULL)
+- ONSET_DATE_MGMT: varchar(2) (NULL)
+- PRO_DATE_MGMT: varchar(2) (NULL)
+- PX_DATE_MGMT: varchar(2) (NULL)
+- REFRESH_CONDITION_DATE: date (NULL)
+- REFRESH_DEATH_CAUSE_DATE: date (NULL)
+- REFRESH_DEATH_DATE: date (NULL)
+- REFRESH_DEMOGRAPHIC_DATE: date (NULL)
+- REFRESH_DIAGNOSIS_DATE: date (NULL)
+- REFRESH_DISPENSING_DATE: date (NULL)
+- REFRESH_ENCOUNTER_DATE: date (NULL)
+- REFRESH_ENROLLMENT_DATE: date (NULL)
+- REFRESH_HASH_TOKEN_DATE: date (NULL)
+- REFRESH_IMMUNIZATION_DATE: date (NULL)
+- REFRESH_LAB_RESULT_CM_DATE: date (NULL)
+- REFRESH_LDS_ADDRESS_HX_DATE: date (NULL)
+- REFRESH_MED_ADMIN_DATE: date (NULL)
+- REFRESH_OBS_CLIN_DATE: date (NULL)
+- REFRESH_OBS_GEN_DATE: date (NULL)
+- REFRESH_PCORNET_TRIAL_DATE: date (NULL)
+- REFRESH_PRESCRIBING_DATE: date (NULL)
+- REFRESH_PRO_CM_DATE: date (NULL)
+- REFRESH_PROCEDURES_DATE: date (NULL)
+- REFRESH_PROVIDER_DATE: date (NULL)
+- REFRESH_VITAL_DATE: date (NULL)
+- REPORT_DATE_MGMT: varchar(2) (NULL)
+- RESOLVE_DATE_MGMT: varchar(2) (NULL)
+- RESULT_DATE_MGMT: varchar(2) (NULL)
+- RX_END_DATE_MGMT: varchar(2) (NULL)
+- RX_ORDER_DATE_MGMT: varchar(2) (NULL)
+- RX_START_DATE_MGMT: varchar(2) (NULL)
+- SPECIMEN_DATE_MGMT: varchar(2) (NULL)
+- TOKEN_ENCRYPTION_KEY: varchar(-1) (NULL)
+- VX_ADMIN_DATE_MGMT: varchar(2) (NULL)
+- VX_EXP_DATE_MGMT: varchar(2) (NULL)
+- VX_RECORD_DATE_MGMT: varchar(2) (NULL)
+
+## Table: HASH_TOKEN
+
+### Columns:
+- PATID: varchar(700) (NOT NULL)
+- TOKEN_01: varchar(-1) (NULL)
+- TOKEN_02: varchar(-1) (NULL)
+- TOKEN_03: varchar(-1) (NULL)
+- TOKEN_04: varchar(-1) (NULL)
+- TOKEN_05: varchar(-1) (NULL)
+- TOKEN_06: varchar(-1) (NULL)
+- TOKEN_07: varchar(-1) (NULL)
+- TOKEN_08: varchar(-1) (NULL)
+- TOKEN_09: varchar(-1) (NULL)
+- TOKEN_12: varchar(-1) (NULL)
+- TOKEN_14: varchar(-1) (NULL)
+- TOKEN_15: varchar(-1) (NULL)
+- TOKEN_16: varchar(-1) (NULL)
+- TOKEN_17: varchar(-1) (NULL)
+- TOKEN_18: varchar(-1) (NULL)
+- TOKEN_23: varchar(-1) (NULL)
+- TOKEN_24: varchar(-1) (NULL)
+- TOKEN_25: varchar(-1) (NULL)
+- TOKEN_26: varchar(-1) (NULL)
+- TOKEN_29: varchar(-1) (NULL)
+- TOKEN_30: varchar(-1) (NULL)
+- TOKEN_101: varchar(-1) (NULL)
+- TOKEN_102: varchar(-1) (NULL)
+- TOKEN_103: varchar(-1) (NULL)
+- TOKEN_104: varchar(-1) (NULL)
+- TOKEN_105: varchar(-1) (NULL)
+- TOKEN_106: varchar(-1) (NULL)
+- TOKEN_107: varchar(-1) (NULL)
+- TOKEN_108: varchar(-1) (NULL)
+- TOKEN_109: varchar(-1) (NULL)
+- TOKEN_110: varchar(-1) (NULL)
+- TOKEN_111: varchar(-1) (NULL)
+- TOKEN_ENCRYPTION_KEY: varchar(-1) (NULL)
+- TOKEN_38: varchar(-1) (NULL)
+- TOKEN_39: varchar(-1) (NULL)
+- record_id: varchar(40) (NULL)
+
+## Table: hashtokenstaging
+
+### Columns:
+- PATID: varchar(700) (NOT NULL)
+- FIRSTNAME: varchar(50) (NULL)
+- LASTNAME: varchar(50) (NULL)
+- SSN: varchar(8000) (NULL)
+- DOB: varchar(30) (NULL)
+- SEX: varchar(2) (NULL)
+- ZIPCODE: varchar(10) (NULL)
+- ADDRESS: varchar(8000) (NULL)
+- PHONE: varchar(13) (NULL)
+- EMAIL: varchar(80) (NULL)
+
+## Table: IMMUNIZATION
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL) [FK -> ENCOUNTER.ENCOUNTERID]
+- IMMUNIZATIONID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PROCEDURESID: varchar(700) (NULL)
+- RAW_VX_BODY_SITE: varchar(-1) (NULL)
+- RAW_VX_CODE: varchar(-1) (NULL)
+- RAW_VX_CODE_TYPE: varchar(-1) (NULL)
+- RAW_VX_DOSE: varchar(-1) (NULL)
+- RAW_VX_DOSE_UNIT: varchar(-1) (NULL)
+- RAW_VX_MANUFACTURER: varchar(-1) (NULL)
+- RAW_VX_NAME: varchar(-1) (NULL)
+- RAW_VX_ROUTE: varchar(-1) (NULL)
+- RAW_VX_STATUS: varchar(-1) (NULL)
+- RAW_VX_STATUS_REASON: varchar(-1) (NULL)
+- VX_ADMIN_DATE: date (NULL)
+- VX_BODY_SITE: varchar(-1) (NULL)
+- VX_CODE: varchar(11) (NULL)
+- VX_CODE_TYPE: varchar(2) (NOT NULL)
+- VX_DOSE: numeric (NULL)
+- VX_DOSE_UNIT: varchar(-1) (NULL)
+- VX_EXP_DATE: date (NULL)
+- VX_LOT_NUM: varchar(-1) (NULL)
+- VX_MANUFACTURER: varchar(-1) (NULL)
+- VX_PROVIDERID: varchar(700) (NULL) [FK -> PROVIDER.PROVIDERID]
+- VX_RECORD_DATE: date (NULL)
+- VX_ROUTE: varchar(-1) (NULL)
+- VX_SOURCE: varchar(2) (NULL)
+- VX_STATUS: varchar(2) (NOT NULL)
+- VX_STATUS_REASON: varchar(2) (NULL)
+- RAW_ENCOUNTERID: varchar(700) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: LAB_HISTORY
+
+### Columns:
+- AGE_MAX_WKS: numeric (NULL)
+- AGE_MIN_WKS: numeric (NULL)
+- LAB_FACILITYID: varchar(-1) (NULL)
+- LAB_LOINC: varchar(10) (NOT NULL)
+- LABHISTORYID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- NORM_MODIFIER_HIGH: varchar(2) (NULL)
+- NORM_MODIFIER_LOW: varchar(2) (NULL)
+- NORM_RANGE_HIGH: varchar(10) (NULL)
+- NORM_RANGE_LOW: varchar(10) (NULL)
+- PERIOD_END: date (NULL)
+- PERIOD_START: date (NULL)
+- RACE: varchar(2) (NULL)
+- RAW_LAB_NAME: varchar(-1) (NULL)
+- RAW_RANGE: varchar(-1) (NULL)
+- RAW_UNIT: varchar(-1) (NULL)
+- RESULT_UNIT: varchar(-1) (NULL)
+- SEX: varchar(2) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+
+## Table: LAB_RESULT_CM
+
+### Columns:
+- ABN_IND: varchar(2) (NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- LAB_LOINC: varchar(10) (NOT NULL)
+- LAB_LOINC_SOURCE: varchar(2) (NULL)
+- LAB_ORDER_DATE: date (NULL)
+- LAB_PX: varchar(11) (NULL)
+- LAB_PX_TYPE: varchar(2) (NULL)
+- LAB_RESULT_CM_ID: varchar(700) (NOT NULL)
+- LAB_RESULT_SOURCE: varchar(2) (NULL)
+- NORM_MODIFIER_HIGH: varchar(2) (NULL)
+- NORM_MODIFIER_LOW: varchar(2) (NULL)
+- NORM_RANGE_HIGH: varchar(10) (NULL)
+- NORM_RANGE_LOW: varchar(10) (NULL)
+- PATID: varchar(700) (NOT NULL)
+- PRIORITY: varchar(2) (NULL)
+- RAW_FACILITY_CODE: varchar(-1) (NULL)
+- RAW_LAB_CODE: varchar(-1) (NULL)
+- RAW_LAB_NAME: varchar(-1) (NULL)
+- RAW_ORDER_DEPT: varchar(-1) (NULL)
+- RAW_PANEL: varchar(-1) (NULL)
+- RAW_RESULT: varchar(-1) (NULL)
+- RAW_UNIT: varchar(-1) (NULL)
+- RESULT_DATE: date (NOT NULL)
+- RESULT_LOC: varchar(2) (NULL)
+- RESULT_MODIFIER: varchar(2) (NULL)
+- RESULT_NUM: numeric (NULL)
+- RESULT_QUAL: varchar(-1) (NULL)
+- RESULT_SNOMED: varchar(18) (NULL)
+- RESULT_TIME: varchar(5) (NULL)
+- RESULT_UNIT: varchar(-1) (NULL)
+- SPECIMEN_DATE: date (NULL)
+- SPECIMEN_SOURCE: varchar(-1) (NULL)
+- SPECIMEN_TIME: varchar(5) (NULL)
+- RAW_ENCOUNTERID: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RAW_PANEL_NAME: varchar(-1) (NULL)
+- PROCEDURESID: varchar(700) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: LAB_RESULT_CM_bak
+
+### Columns:
+- ABN_IND: varchar(2) (NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- LAB_LOINC: varchar(10) (NOT NULL)
+- LAB_LOINC_SOURCE: varchar(2) (NULL)
+- LAB_ORDER_DATE: date (NULL)
+- LAB_PX: varchar(11) (NULL)
+- LAB_PX_TYPE: varchar(2) (NULL)
+- LAB_RESULT_CM_ID: varchar(700) (NOT NULL)
+- LAB_RESULT_SOURCE: varchar(2) (NULL)
+- NORM_MODIFIER_HIGH: varchar(2) (NULL)
+- NORM_MODIFIER_LOW: varchar(2) (NULL)
+- NORM_RANGE_HIGH: varchar(10) (NULL)
+- NORM_RANGE_LOW: varchar(50) (NULL)
+- PATID: varchar(700) (NOT NULL)
+- PRIORITY: varchar(25) (NULL)
+- RAW_FACILITY_CODE: varchar(-1) (NULL)
+- RAW_LAB_CODE: varchar(-1) (NULL)
+- RAW_LAB_NAME: varchar(-1) (NULL)
+- RAW_ORDER_DEPT: varchar(-1) (NULL)
+- RAW_PANEL: varchar(-1) (NULL)
+- RAW_RESULT: varchar(-1) (NULL)
+- RAW_UNIT: varchar(-1) (NULL)
+- RESULT_DATE: date (NOT NULL)
+- RESULT_LOC: varchar(2) (NULL)
+- RESULT_MODIFIER: varchar(2) (NULL)
+- RESULT_NUM: numeric (NULL)
+- RESULT_QUAL: varchar(-1) (NULL)
+- RESULT_SNOMED: varchar(-1) (NULL)
+- RESULT_TIME: varchar(5) (NULL)
+- RESULT_UNIT: varchar(-1) (NULL)
+- SPECIMEN_DATE: date (NULL)
+- SPECIMEN_SOURCE: varchar(-1) (NULL)
+- SPECIMEN_TIME: varchar(5) (NULL)
+- RAW_ENCOUNTERID: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RAW_PANEL_NAME: varchar(-1) (NULL)
+- PROCEDURESID: varchar(700) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_SRC: varchar(32) (NULL)
+- MPI_LID: varchar(32) (NULL)
+
+## Table: LDS_ADDRESS_HISTORY
+
+### Columns:
+- ADDRESS_CITY: varchar(-1) (NULL)
+- ADDRESS_PERIOD_END: date (NULL)
+- ADDRESS_PERIOD_START: date (NULL)
+- ADDRESS_PREFERRED: varchar(2) (NULL)
+- ADDRESS_STATE: varchar(2) (NULL)
+- ADDRESS_TYPE: varchar(2) (NOT NULL)
+- ADDRESS_USE: varchar(2) (NOT NULL)
+- ADDRESS_ZIP9: varchar(9) (NULL)
+- ADDRESSID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- ADDRESS_COUNTY: varchar(-1) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- ADDRESS_ZIP5: varchar(5) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+- STATE_FIPS: varchar(2) (NULL)
+- COUNTY_FIPS: varchar(5) (NULL)
+- RUCA_ZIP: varchar(2) (NULL)
+- CURRENT_ADDRESS_FLAG: varchar(1) (NULL)
+
+## Table: MED_ADMIN
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- MEDADMIN_CODE: varchar(11) (NULL)
+- MEDADMIN_DOSE_ADMIN: int (NULL)
+- MEDADMIN_DOSE_ADMIN_UNIT: varchar(-1) (NULL)
+- MEDADMIN_PROVIDERID: varchar(700) (NULL)
+- MEDADMIN_ROUTE: varchar(-1) (NULL)
+- MEDADMIN_SOURCE: varchar(2) (NULL)
+- MEDADMIN_START_DATE: date (NOT NULL)
+- MEDADMIN_START_TIME: varchar(5) (NULL)
+- MEDADMIN_STOP_DATE: date (NULL)
+- MEDADMIN_STOP_TIME: varchar(5) (NULL)
+- MEDADMIN_TYPE: varchar(2) (NULL)
+- MEDADMINID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- PATID: varchar(700) (NOT NULL)
+- PRESCRIBINGID: varchar(700) (NOT NULL)
+- RAW_MEDADMIN_CODE: varchar(-1) (NULL)
+- RAW_MEDADMIN_DOSE_ADMIN: varchar(-1) (NULL)
+- RAW_MEDADMIN_DOSE_ADMIN_UNIT: varchar(-1) (NULL)
+- RAW_MEDADMIN_MED_NAME: varchar(-1) (NULL)
+- RAW_MEDADMIN_ROUTE: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: MED_ADMIN_INVALID
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- MEDADMIN_CODE: varchar(-1) (NULL)
+- MEDADMIN_DOSE_ADMIN: int (NULL)
+- MEDADMIN_DOSE_ADMIN_UNIT: varchar(-1) (NULL)
+- MEDADMIN_PROVIDERID: varchar(700) (NULL)
+- MEDADMIN_ROUTE: varchar(-1) (NULL)
+- MEDADMIN_SOURCE: varchar(2) (NULL)
+- MEDADMIN_START_DATE: date (NOT NULL)
+- MEDADMIN_START_TIME: varchar(5) (NULL)
+- MEDADMIN_STOP_DATE: date (NULL)
+- MEDADMIN_STOP_TIME: varchar(5) (NULL)
+- MEDADMIN_TYPE: varchar(2) (NULL)
+- MEDADMINID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL)
+- PRESCRIBINGID: varchar(700) (NOT NULL)
+- RAW_MEDADMIN_CODE: varchar(-1) (NULL)
+- RAW_MEDADMIN_DOSE_ADMIN: varchar(-1) (NULL)
+- RAW_MEDADMIN_DOSE_ADMIN_UNIT: varchar(-1) (NULL)
+- RAW_MEDADMIN_MED_NAME: varchar(-1) (NULL)
+- RAW_MEDADMIN_ROUTE: varchar(-1) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+
+## Table: OBS_CLIN
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- OBSCLIN_ABN_IND: varchar(2) (NULL)
+- OBSCLIN_CODE: varchar(18) (NULL)
+- OBSCLIN_PROVIDERID: varchar(700) (NULL)
+- OBSCLIN_RESULT_MODIFIER: varchar(2) (NULL)
+- OBSCLIN_RESULT_NUM: numeric (NULL)
+- OBSCLIN_RESULT_QUAL: varchar(-1) (NULL)
+- OBSCLIN_RESULT_SNOMED: varchar(18) (NULL)
+- OBSCLIN_RESULT_TEXT: varchar(-1) (NULL)
+- OBSCLIN_RESULT_UNIT: varchar(-1) (NULL)
+- OBSCLIN_SOURCE: varchar(2) (NULL)
+- OBSCLIN_START_DATE: date (NOT NULL)
+- OBSCLIN_START_TIME: varchar(5) (NULL)
+- OBSCLIN_STOP_DATE: date (NULL)
+- OBSCLIN_STOP_TIME: varchar(5) (NULL)
+- OBSCLIN_TYPE: varchar(2) (NULL)
+- OBSCLINID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL)
+- RAW_ENCOUNTERID: varchar(700) (NULL)
+- RAW_OBSCLIN_CODE: varchar(-1) (NULL)
+- RAW_OBSCLIN_MODIFIER: varchar(-1) (NULL)
+- RAW_OBSCLIN_NAME: varchar(-1) (NULL)
+- RAW_OBSCLIN_RESULT: varchar(-1) (NULL)
+- RAW_OBSCLIN_TYPE: varchar(-1) (NULL)
+- RAW_OBSCLIN_UNIT: varchar(-1) (NULL)
+- RAW_PATID: int (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: OBS_GEN
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL) [FK -> ENCOUNTER.ENCOUNTERID]
+- OBSGEN_ABN_IND: varchar(2) (NULL)
+- OBSGEN_CODE: varchar(-1) (NULL)
+- OBSGEN_ID_MODIFIED: varchar(-1) (NULL)
+- OBSGEN_PROVIDERID: varchar(700) (NULL) [FK -> PROVIDER.PROVIDERID]
+- OBSGEN_RESULT_MODIFIER: varchar(2) (NULL)
+- OBSGEN_RESULT_NUM: numeric (NULL)
+- OBSGEN_RESULT_QUAL: varchar(-1) (NULL)
+- OBSGEN_RESULT_TEXT: varchar(-1) (NULL)
+- OBSGEN_RESULT_UNIT: varchar(-1) (NULL)
+- OBSGEN_SOURCE: varchar(2) (NULL)
+- OBSGEN_START_DATE: date (NOT NULL)
+- OBSGEN_START_TIME: varchar(5) (NULL)
+- OBSGEN_STOP_DATE: date (NULL)
+- OBSGEN_STOP_TIME: varchar(5) (NULL)
+- OBSGEN_TABLE_MODIFIED: varchar(3) (NULL)
+- OBSGEN_TYPE: varchar(30) (NULL)
+- OBSGENID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- RAW_OBSGEN_CODE: varchar(-1) (NULL)
+- RAW_OBSGEN_NAME: varchar(-1) (NULL)
+- RAW_OBSGEN_RESULT: varchar(-1) (NULL)
+- RAW_OBSGEN_TYPE: varchar(-1) (NULL)
+- RAW_OBSGEN_UNIT: varchar(-1) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+
+## Table: obs_gen_doc_ont
+
+### Columns:
+- note_id: varchar(100) (NULL)
+- note_csn_id: varchar(100) (NULL)
+- patid: varchar(100) (NULL)
+- encounterid: varchar(100) (NULL)
+- obsgen_start_date: varchar(100) (NULL)
+- obsgen_start_time: nvarchar(4000) (NULL)
+- obsgen_type: varchar(2) (NOT NULL)
+- obsgen_source: varchar(2) (NOT NULL)
+- obsgen_code: varchar(100) (NULL)
+- obsgen_providerid: varchar(100) (NULL)
+- raw_obsgen_name: varchar(25) (NULL)
+- raw_obsgen_code: varchar(100) (NULL)
+- raw_obsgen_type: varchar(8) (NOT NULL)
+
+## Table: OBSCLIN_CODE
+
+### Columns:
+- CDW_Source: varchar(64) (NOT NULL)
+- OBS_NAME: varchar(2000) (NOT NULL)
+- OBS_CODE: varchar(200) (NOT NULL)
+- OBS_UNIT: varchar(200) (NOT NULL)
+- OBSCLIN_TYPE: char(2) (NOT NULL)
+- OBSCLIN_CODE: varchar(18) (NOT NULL)
+- OBSCLIN_RESULT_UNIT: varchar(200) (NULL)
+
+## Table: OBSCLIN_RESULT
+
+### Columns:
+- OBSCLIN_TYPE: char(2) (NOT NULL)
+- OBSCLIN_CODE: varchar(200) (NOT NULL)
+- OBS_RESULT_TEXT: varchar(640) (NOT NULL)
+- OBSCLIN_RESULT_QUAL: varchar(200) (NOT NULL)
+- OBSCLIN_RESULT_SNOMED: varchar(18) (NULL)
+
+## Table: OBSCLIN_TYPE
+
+### Columns:
+- OBSCLIN_TYPE: char(2) (NOT NULL)
+
+## Table: PAT_RELATIONSHIP
+
+### Columns:
+- PATID_1: varchar(700) (NOT NULL)
+- PATID_2: varchar(700) (NOT NULL)
+- RELATIONSHIP_TYPE: char(2) (NOT NULL)
+- RELATIONSHIP_START: date (NULL)
+- RELATIONSHIP_END: date (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RAW_PANEL_NAME: varchar(-1) (NULL)
+- PROCEDURESID: varchar(700) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- PATID1: varchar(50) (NULL)
+- PATID2: varchar(50) (NULL)
+
+## Table: pcornet_constraints
+
+### Columns:
+- TABLE_NAME: varchar(500) (NULL)
+- FIELD_NAME: varchar(500) (NULL)
+- CONSTRAINT: varchar(500) (NULL)
+- CONSTRAINT_ORDER: varchar(500) (NULL)
+- CHANGED_IN_THIS_VERSION: varchar(500) (NULL)
+
+## Table: pcornet_domains
+
+### Columns:
+- TABLE_NAME: varchar(50) (NULL)
+- DOMAIN_DESCRIPTION: varchar(50) (NULL)
+- DOMAIN_ORDER: varchar(50) (NULL)
+- CHANGED_IN_THIS_VERSION: varchar(50) (NULL)
+
+## Table: pcornet_fields
+
+### Columns:
+- TABLE_NAME: varchar(50) (NULL)
+- FIELD_NAME: varchar(50) (NULL)
+- RDBMS_DATA_TYPE: varchar(50) (NULL)
+- SAS_DATA_TYPE: varchar(50) (NULL)
+- DATA_FORMAT: varchar(500) (NULL)
+- REPLICATED_FIELD: varchar(50) (NULL)
+- UNIT_OF_MEASURE: varchar(50) (NULL)
+- VALUESET: varchar(500) (NULL)
+- FIELD_DEFINITION: varchar(5000) (NULL)
+- FIELD_ORDER: varchar(50) (NULL)
+- CHANGED_IN_THIS_VERSION: varchar(5000) (NULL)
+
+## Table: pcornet_relational
+
+### Columns:
+- TABLE_NAME: varchar(500) (NULL)
+- RELATION: varchar(500) (NULL)
+- RELATIONAL_INTEGRITY_DETAILS: varchar(500) (NULL)
+- RELATION_ORDER: varchar(500) (NULL)
+- CHANGED_IN_THIS_VERSION: varchar(500) (NULL)
+
+## Table: PCORNET_TRIAL
+
+### Columns:
+- PARTICIPANTID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- PATID: varchar(700) (NOT NULL) [PRIMARY KEY] [FK -> DEMOGRAPHIC.PATID]
+- TRIAL_END_DATE: date (NULL)
+- TRIAL_ENROLL_DATE: date (NULL)
+- TRIAL_INVITE_CODE: varchar(20) (NULL)
+- TRIAL_SITEID: varchar(-1) (NULL)
+- TRIAL_WITHDRAW_DATE: date (NULL)
+- TRIALID: varchar(20) (NOT NULL) [PRIMARY KEY]
+- GPC_FLAG: char(1) (NOT NULL)
+
+## Table: pcornet_valuesets
+
+### Columns:
+- TABLE_NAME: nvarchar(255) (NULL)
+- FIELD_NAME: nvarchar(255) (NULL)
+- VALUESET_ITEM: nvarchar(255) (NULL)
+- VALUESET_ITEM_DESCRIPTOR: nvarchar(255) (NULL)
+- VALUESET_ITEM_ORDER: nvarchar(255) (NULL)
+
+## Table: PRESCRIBING
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PRESCRIBINGID: varchar(700) (NOT NULL)
+- RAW_RX_DOSE_ORDERED: varchar(-1) (NULL)
+- RAW_RX_DOSE_ORDERED_UNIT: varchar(-1) (NULL)
+- RAW_RX_FREQUENCY: varchar(-1) (NULL)
+- RAW_RX_MED_NAME: varchar(-1) (NULL)
+- RAW_RX_NDC: varchar(-1) (NULL)
+- RAW_RX_QUANTITY: varchar(-1) (NULL)
+- RAW_RX_REFILLS: varchar(-1) (NULL)
+- RAW_RX_ROUTE: varchar(-1) (NULL)
+- RAW_RXNORM_CUI: varchar(-1) (NULL)
+- RX_BASIS: varchar(2) (NULL)
+- RX_DAYS_SUPPLY: numeric (NULL)
+- RX_DISPENSE_AS_WRITTEN: varchar(2) (NULL)
+- RX_DOSE_FORM: varchar(-1) (NULL)
+- RX_DOSE_ORDERED: numeric (NULL)
+- RX_DOSE_ORDERED_UNIT: varchar(-1) (NULL)
+- RX_END_DATE: date (NULL)
+- RX_FREQUENCY: varchar(2) (NULL)
+- RX_ORDER_DATE: date (NULL)
+- RX_ORDER_TIME: varchar(5) (NULL)
+- RX_PRN_FLAG: varchar(1) (NULL)
+- RX_PROVIDERID: varchar(700) (NULL) [FK -> PROVIDER.PROVIDERID]
+- RX_QUANTITY: numeric (NULL)
+- RX_REFILLS: numeric (NULL)
+- RX_ROUTE: varchar(-1) (NULL)
+- RX_SOURCE: varchar(2) (NULL)
+- RX_START_DATE: date (NULL)
+- RXNORM_CUI: varchar(8) (NULL)
+- RAW_ENCOUNTERID: varchar(700) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- RAW_RX_DOSE_FORM: varchar(-1) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: PRIVATE_ADDRESS_GEOCODE
+
+### Columns:
+- GEOCODEID: varchar(256) (NOT NULL)
+- ADDRESSID: varchar(256) (NOT NULL)
+- GEOCODE_STATE: char(2) (NULL)
+- GEOCODE_COUNTY: varchar(256) (NULL)
+- GEOCODE_LONGITUDE: varchar(256) (NULL)
+- GEOCODE_LATITUDE: varchar(256) (NULL)
+- GEOCODE_BLOCK: varchar(256) (NULL)
+- GEOCODE_TRACT: varchar(256) (NULL)
+- GEOCODE_GROUP: varchar(256) (NULL)
+- GEOCODE_ZCTA: varchar(256) (NULL)
+- GEOCODE_CUSTOM: varchar(256) (NULL)
+- GEOCODE_CUSTOM_TEXT: varchar(256) (NULL)
+- SHAPEFILE: varchar(256) (NULL)
+- GEO_ACCURACY: char(2) (NULL)
+- GEO_PROV_REF: varchar(256) (NULL)
+- ASSIGNMENT_DATE: date (NULL)
+- GPC_FLAG: varchar(1) (NULL)
+
+## Table: PRIVATE_ADDRESS_HISTORY
+
+### Columns:
+- ADDRESS_CITY: varchar(-1) (NULL)
+- ADDRESS_PERIOD_END: date (NULL)
+- ADDRESS_PERIOD_START: date (NULL)
+- ADDRESS_PREFERRED: varchar(2) (NULL)
+- ADDRESS_STREET: varchar(700) (NULL)
+- ADDRESS_DETAIL: varchar(700) (NULL)
+- ADDRESS_STATE: varchar(2) (NULL)
+- ADDRESS_TYPE: varchar(2) (NOT NULL)
+- ADDRESS_USE: varchar(2) (NOT NULL)
+- ADDRESS_ZIP9: varchar(9) (NULL)
+- ADDRESSID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL)
+- ADDRESS_COUNTY: varchar(-1) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- ADDRESS_ZIP5: varchar(5) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+- STATE_FIPS: char(2) (NULL)
+- COUNTY_FIPS: char(5) (NULL)
+- RUCA_ZIP: char(2) (NULL)
+- CURRENT_ADDRESS_FLAG: char(1) (NULL)
+- RAW_ADDRESS_TEXT: varchar(-1) (NULL)
+
+## Table: PRIVATE_DEMOGRAPHIC
+
+### Columns:
+- UID: int (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- ORG_PATID: varchar(700) (NOT NULL)
+- MANAGING_ORG: varchar(16) (NULL)
+- ALLSCRIPTS_PERSON_ID: int (NULL)
+- AXIUM_CHART: varchar(16) (NULL)
+- AXIUM_PATIENT: varchar(16) (NULL)
+- EPIC_PAT_ID: varchar(64) (NULL)
+- I2B2_PATIENT_NUM: numeric (NULL)
+- MHH_COVID_PERSON: int (NULL)
+- MHH_MRN: varchar(20) (NULL)
+- UTP_MRN: varchar(20) (NULL)
+- PAT_FIRSTNAME: varchar(50) (NULL)
+- PAT_MIDDLENAME: varchar(64) (NULL)
+- PAT_LASTNAME: varchar(50) (NULL)
+- PAT_MAIDENNAME: varchar(50) (NULL)
+- PAT_SSN: varchar(16) (NULL)
+- BIRTH_DATE: date (NULL)
+- BIRTH_TIME: varchar(5) (NULL)
+- PRIMARY_EMAIL: varchar(80) (NULL)
+- PRIMARY_PHONE: varchar(13) (NULL)
+- SEX: varchar(2) (NULL)
+- SEXUAL_ORIENTATION: varchar(2) (NOT NULL)
+- GENDER_IDENTITY: varchar(2) (NOT NULL)
+- HISPANIC: varchar(2) (NULL)
+- RACE: varchar(2) (NULL)
+- RACE_DESCRIPTION: varchar(-1) (NULL)
+- BIOBANK_FLAG: varchar(1) (NULL)
+- PAT_PREF_LANGUAGE_SPOKEN: varchar(3) (NULL)
+- DEATH_DATE: date (NULL)
+- MARITALSTATUS: nvarchar(100) (NULL)
+- PAT_ADDRESS: varchar(128) (NULL)
+- PAT_CITY: varchar(35) (NULL)
+- PAT_STATE: varchar(100) (NULL)
+- PAT_ZIPCODE: char(10) (NULL)
+- RAW_PAT_NAME: varchar(193) (NULL)
+- RAW_SEX: varchar(-1) (NULL)
+- RAW_SEXUAL_ORIENTATION: varchar(-1) (NULL)
+- RAW_GENDER_IDENTITY: varchar(-1) (NULL)
+- RAW_HISPANIC: varchar(-1) (NULL)
+- RAW_RACE: varchar(-1) (NULL)
+- RAW_PAT_PREF_LANGUAGE_SPOKEN: varchar(-1) (NULL)
+- CDW_UpdatedDTTM: datetime (NOT NULL)
+
+## Table: PRO_CM
+
+### Columns:
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PRO_CAT: varchar(2) (NULL)
+- PRO_CM_ID: varchar(700) (NOT NULL) [PRIMARY KEY]
+- PRO_DATE: date (NOT NULL)
+- PRO_ITEM_FULLNAME: varchar(-1) (NULL)
+- PRO_ITEM_NAME: varchar(-1) (NULL)
+- PRO_ITEM_TEXT: varchar(-1) (NULL)
+- PRO_ITEM_VERSION: varchar(-1) (NULL)
+- PRO_MEASURE_SEQ: varchar(-1) (NULL)
+- PRO_METHOD: varchar(2) (NULL)
+- PRO_MODE: varchar(2) (NULL)
+- PRO_RESPONSE_NUM: numeric (NULL)
+- PRO_RESPONSE_TEXT: varchar(-1) (NULL)
+- PRO_SOURCE: varchar(2) (NULL)
+- PRO_TIME: varchar(5) (NULL)
+- PRO_TYPE: varchar(2) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- PRO_NAME: varchar(-1) (NULL)
+- PRO_CODE: varchar(50) (NULL)
+- PRO_VERSION: varchar(-1) (NULL)
+- PRO_SEQ: varchar(-1) (NULL)
+- PRO_FULLNAME: varchar(-1) (NULL)
+- PRO_TEXT: varchar(-1) (NULL)
+
+## Table: PROCEDURES
+
+### Columns:
+- ADMIT_DATE: date (NOT NULL)
+- ENC_TYPE: varchar(2) (NOT NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL) [FK -> ENCOUNTER.ENCOUNTERID]
+- PATID: varchar(700) (NOT NULL) [FK -> DEMOGRAPHIC.PATID]
+- PPX: varchar(2) (NULL)
+- PROCEDURESID: varchar(700) (NOT NULL)
+- PROVIDERID: varchar(700) (NOT NULL) [FK -> PROVIDER.PROVIDERID]
+- PX: varchar(11) (NOT NULL)
+- PX_DATE: date (NULL)
+- PX_SOURCE: varchar(2) (NULL)
+- PX_TYPE: varchar(2) (NOT NULL)
+- RAW_PPX: varchar(-1) (NULL)
+- RAW_PX: varchar(-1) (NULL)
+- RAW_PX_TYPE: varchar(-1) (NULL)
+- raw_encounterid: varchar(700) (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- RAW_PX_NAME: varchar(2000) (NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+## Table: PROCEDURES_TYPE_MAP
+
+### Columns:
+- CDW_Source: varchar(64) (NOT NULL) [PRIMARY KEY]
+- RAW_PX: varchar(1000) (NOT NULL) [PRIMARY KEY]
+- PX_TYPE: varchar(2) (NOT NULL)
+- PX: varchar(64) (NOT NULL)
+
+## Table: PROVIDER
+
+### Columns:
+- Deactivated: varchar(1) (NULL)
+- FirstName: varchar(128) (NULL)
+- LastName: varchar(128) (NULL)
+- PCP: char(1) (NULL)
+- PersonId: numeric (NULL)
+- PROVIDER_NPI: bigint (NULL)
+- PROVIDER_NPI_FLAG: varchar(1) (NULL)
+- PROVIDER_SEX: varchar(2) (NULL)
+- PROVIDER_SPECIALTY_PRIMARY: varchar(-1) (NULL)
+- PROVIDERID: varchar(700) (NOT NULL)
+- ProviderName: varchar(128) (NULL)
+- RAW_PROVIDER_SPECIALTY_PRIMARY: varchar(-1) (NULL)
+- ResourceDE: char(10) (NULL)
+- ResourceName: varchar(255) (NULL)
+- Username: varchar(40) (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+
+## Table: RUCA
+
+### Columns:
+- ZIP_CODE: varchar(50) (NULL)
+- STATE: varchar(50) (NULL)
+- ZIP_TYPE: varchar(50) (NULL)
+- RUCA1: varchar(50) (NULL)
+- RUCA2: varchar(50) (NULL)
+
+## Table: STATE_FIPS
+
+### Columns:
+- STATE_FIPS: varchar(50) (NULL)
+- STATE_NAME: varchar(50) (NULL)
+- STATE_ABB: varchar(2) (NULL)
+
+## Table: sysdiagrams
+
+### Columns:
+- name: nvarchar(128) (NOT NULL)
+- principal_id: int (NOT NULL)
+- diagram_id: int (NOT NULL) [PRIMARY KEY]
+- version: int (NULL)
+- definition: varbinary(-1) (NULL)
+
+## Table: tokenization_output_UTH
+
+### Columns:
+- PATID: varchar(50) (NULL)
+- token_1: varchar(50) (NULL)
+- token_2: varchar(50) (NULL)
+- token_3: varchar(50) (NULL)
+- token_4: varchar(50) (NULL)
+- token_5: varchar(50) (NULL)
+- token_16: varchar(50) (NULL)
+- token_101: varchar(50) (NULL)
+- token_102: varchar(50) (NULL)
+- token_103: varchar(50) (NULL)
+- token_104: varchar(50) (NULL)
+- token_105: varchar(50) (NULL)
+- token_106: varchar(50) (NULL)
+- token_107: varchar(50) (NULL)
+- token_108: varchar(50) (NULL)
+- token_109: varchar(50) (NULL)
+- token_110: varchar(50) (NULL)
+- token_111: varchar(50) (NULL)
+- token_6: varchar(50) (NULL)
+- token_7: varchar(50) (NULL)
+- token_8: varchar(50) (NULL)
+- token_9: varchar(50) (NULL)
+- token_12: varchar(50) (NULL)
+- token_14: varchar(50) (NULL)
+- token_15: varchar(50) (NULL)
+- token_17: varchar(50) (NULL)
+- token_18: varchar(50) (NULL)
+- token_23: varchar(50) (NULL)
+- token_24: varchar(50) (NULL)
+- token_25: varchar(50) (NULL)
+- token_26: varchar(50) (NULL)
+- token_29: varchar(50) (NULL)
+- token_30: varchar(50) (NULL)
+- token_encryption_key: varchar(50) (NULL)
+- source_site_name: varchar(50) (NULL)
+
+## Table: UTMRN_TO_MHHSMRN
+
+### Columns:
+- EPIC_PAT_ID: varchar(18) (NOT NULL)
+- EPIC_MRN: varchar(102) (NULL)
+- MHHS_MRN: varchar(8000) (NULL)
+
+## Table: VITAL
+
+### Columns:
+- BP_POSITION: varchar(2) (NULL)
+- DIASTOLIC: numeric (NULL)
+- ENCOUNTERID: varchar(700) (NOT NULL)
+- HT: numeric (NULL)
+- MEASURE_DATE: date (NOT NULL)
+- MEASURE_TIME: varchar(5) (NULL)
+- ORIGINAL_BMI: numeric (NULL)
+- PATID: varchar(700) (NOT NULL)
+- RAW_BP_POSITION: varchar(-1) (NULL)
+- RAW_DIASTOLIC: varchar(-1) (NULL)
+- RAW_SMOKING: varchar(-1) (NULL)
+- RAW_SYSTOLIC: varchar(-1) (NULL)
+- RAW_TOBACCO: varchar(-1) (NULL)
+- RAW_TOBACCO_TYPE: varchar(-1) (NULL)
+- SMOKING: varchar(2) (NULL)
+- SYSTOLIC: numeric (NULL)
+- TOBACCO: varchar(2) (NULL)
+- TOBACCO_TYPE: varchar(2) (NULL)
+- VITAL_SOURCE: varchar(2) (NOT NULL)
+- VITALID: varchar(700) (NOT NULL)
+- WT: numeric (NULL)
+- CDW_Source: varchar(16) (NULL)
+- CDW_UpdatedDTTM: datetime (NULL)
+- CDW_RunID: bigint (NULL)
+- CDW_i2b2_UploadID: numeric (NULL)
+- GPC_FLAG: char(1) (NOT NULL)
+- UID: int (NULL)
+- MPI_LID: varchar(32) (NULL)
+- MPI_SRC: varchar(32) (NULL)
+
+
+---
+## Summary
+Total tables: 59
+

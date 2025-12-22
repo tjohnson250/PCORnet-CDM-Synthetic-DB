@@ -58,3 +58,4 @@ wheels/
 # RStudio
 .Rproj.user/
 
+.DS_Store

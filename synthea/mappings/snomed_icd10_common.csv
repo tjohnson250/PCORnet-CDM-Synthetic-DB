@@ -1,0 +1,40 @@
+snomed_code,icd10_code,description
+44054006,E11.9,Type 2 diabetes mellitus
+38341003,I10,Essential hypertension
+73211009,E11.9,Diabetes mellitus (general)
+13645005,J44.9,Chronic obstructive pulmonary disease
+40055000,J45.909,Asthma
+59621000,I10,Hypertensive disorder
+195967001,J06.9,Upper respiratory infection
+53741008,E66.9,Obesity
+84114007,I50.9,Heart failure
+49436004,I48.91,Atrial fibrillation
+230690007,I63.9,Cerebrovascular accident (stroke)
+22298006,F32.9,Major depressive disorder
+399211009,F41.9,Anxiety disorder
+427089005,I25.10,Coronary artery disease
+706970001,U07.1,COVID-19
+267036007,R06.02,Shortness of breath
+68496003,E78.5,Hyperlipidemia
+90781000119102,N18.3,Chronic kidney disease stage 3
+126906006,G47.33,Obstructive sleep apnea
+19169002,E05.90,Hyperthyroidism
+40930008,E03.9,Hypothyroidism
+36971009,J18.9,Pneumonia
+233604007,J44.1,COPD with acute exacerbation
+195951007,J45.901,Asthma with acute exacerbation
+15777000,K21.0,Gastroesophageal reflux disease
+239873007,M17.11,Osteoarthritis of knee
+69896004,N39.0,Urinary tract infection
+267060006,R05.9,Cough
+10509002,J02.9,Acute pharyngitis
+75498004,R51.9,Headache
+431855005,J30.9,Allergic rhinitis
+271737000,G43.909,Migraine
+118940003,M54.5,Low back pain
+56018004,M25.50,Joint pain
+60168000,N40.0,Benign prostatic hyperplasia
+6072007,I25.5,Ischemic cardiomyopathy
+42343007,G20,Parkinson disease
+26929004,G30.9,Alzheimer disease
+371631005,F17.210,Nicotine dependence

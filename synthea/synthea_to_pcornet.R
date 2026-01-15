@@ -74,8 +74,9 @@ map_snomed_to_icd10 <- function(snomed_code, snomed_map) {
 #'
 #' @param synthea_dir Path to Synthea output/csv directory
 #' @param save_to_disk Whether to save databases to disk files (default: TRUE)
+#' @param output_dir Directory for output files (default: ".")
 #' @return List with con_cdw and con_mpi database connections
-load_synthea_data <- function(synthea_dir, save_to_disk = TRUE) {
+load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = ".") {
 
   cat("Loading Synthea data from:", synthea_dir, "\n")
 
@@ -598,8 +599,11 @@ if (!dir.exists(synthea_dir)) {
 
   if (save_to_disk) {
     cat("\nSaving databases to disk...\n")
-    con_cdw_disk <- dbConnect(duckdb::duckdb(), dbdir = "pcornet_cdw.duckdb")
-    con_mpi_disk <- dbConnect(duckdb::duckdb(), dbdir = "mpi.duckdb")
+    cdw_path <- file.path(output_dir, "pcornet_cdw.duckdb")
+    mpi_path <- file.path(output_dir, "mpi.duckdb")
+
+    con_cdw_disk <- dbConnect(duckdb::duckdb(), dbdir = cdw_path)
+    con_mpi_disk <- dbConnect(duckdb::duckdb(), dbdir = mpi_path)
 
     for (table in dbListTables(con_cdw)) {
       dbWriteTable(con_cdw_disk, table, dbReadTable(con_cdw, table), overwrite = TRUE)
@@ -611,7 +615,9 @@ if (!dir.exists(synthea_dir)) {
     dbDisconnect(con_cdw_disk, shutdown = TRUE)
     dbDisconnect(con_mpi_disk, shutdown = TRUE)
 
-    cat("Databases saved to pcornet_cdw.duckdb and mpi.duckdb\n")
+    cat("Databases saved to:\n")
+    cat("  ", cdw_path, "\n")
+    cat("  ", mpi_path, "\n")
   }
 
   list(cdw = con_cdw, mpi = con_mpi)

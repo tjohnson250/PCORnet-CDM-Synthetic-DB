@@ -9,6 +9,7 @@ A synthetic data generator for [PCORnet Common Data Model (CDM)](https://pcornet
 -   Configurable patient population size
 -   Reproducible data generation with seeded randomization
 -   Includes simulated data quality issues (missing values, temporal inconsistencies)
+-   Three generation modes: clinically coherent profiles, random, or Synthea import
 
 ## Requirements
 
@@ -22,46 +23,124 @@ install.packages(c("DBI", "duckdb", "dplyr", "lubridate"))
 
 ## Quick Start
 
-### Option 1: Clinically Coherent Data (Recommended)
-
 ``` r
-source("create_synthetic_database_enhanced.R")
+# Load the API
+source("R/pcornet.R")
+
+# Generate 100 patients with clinical profiles (default)
+dbs <- create_pcornet_database()
+
+# Access the databases
+dbListTables(dbs$cdw)
+dbListTables(dbs$mpi)
 ```
 
-This generates data using **clinical profiles** where diagnoses, labs, and medications are logically related: - Diabetic patients get diabetes diagnoses, HbA1c labs, and Metformin - Cardiac patients get heart disease diagnoses, lipid panels, and statins - etc.
+### Generation Modes
 
-### Option 2: Random Data (Original)
-
-``` r
-source("create_synthetic_database.R")
-```
-
-Generates data with randomly assigned clinical elements (no clinical logic).
-
-### Option 3: Synthea Integration (Most Realistic)
-
-For highly realistic clinical data, you can import from [Synthea](https://github.com/synthetichealth/synthea):
+**Enhanced Mode (Default)** - Clinically coherent data with patient profiles:
 
 ``` r
-source("synthea/synthea_to_pcornet.R")
-dbs <- load_synthea_data("path/to/synthea/output/csv")
+dbs <- create_pcornet_database(n_patients = 500)
 ```
 
-See `synthea/README.md` for setup instructions.
+**Random Mode** - Randomly assigned clinical elements:
+
+``` r
+dbs <- create_pcornet_database(n_patients = 500, mode = "random")
+```
+
+**Synthea Mode** - Import from Synthea CSV output:
+
+``` r
+dbs <- create_pcornet_database(
+  mode = "synthea",
+  synthea_dir = "path/to/synthea/output/csv"
+)
+```
+
+See `synthea/README.md` for Synthea setup instructions.
 
 ### Load Existing Databases
 
 ``` r
-source("load_databases.R")
+source("R/pcornet.R")
+dbs <- load_pcornet_database()
 ```
 
-Faster than regenerating - useful for working with the same dataset across sessions.
+### View Database Summary
 
-All generation options create:
+``` r
+summary <- get_database_summary(dbs$cdw, dbs$mpi)
+print(summary)
+```
 
-- `con_cdw` - Clinical Data Warehouse (`pcornet_cdw.duckdb`)
+## Function Reference
 
-- `con_mpi` - Master Patient Index (`mpi.duckdb`)
+### `create_pcornet_database()`
+
+Main function to generate synthetic PCORnet databases.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `n_patients` | 100 | Number of synthetic patients to generate |
+| `mode` | "enhanced" | Generation mode: "enhanced", "random", or "synthea" |
+| `current_date` | `Sys.Date()` | Reference date for data generation |
+| `seed` | 42 | Random seed for reproducibility |
+| `save_to_disk` | TRUE | Save databases to disk files |
+| `output_dir` | "." | Directory for output files |
+| `synthea_dir` | NULL | Path to Synthea CSV output (required for mode="synthea") |
+| `profile_weights` | NULL | Named list to override default profile distribution |
+
+**Returns:** List with `$cdw` (CDW connection), `$mpi` (MPI connection), and `$summary` (statistics)
+
+### `load_pcornet_database()`
+
+Load previously generated databases from disk.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `cdw_path` | "pcornet_cdw.duckdb" | Path to CDW database file |
+| `mpi_path` | "mpi.duckdb" | Path to MPI database file |
+
+### `get_database_summary()`
+
+Get row counts and statistics for all tables.
+
+| Parameter | Description |
+|-----------|-------------|
+| `con_cdw` | Connection to CDW database |
+| `con_mpi` | Connection to MPI database (optional) |
+
+## Configuration Examples
+
+``` r
+source("R/pcornet.R")
+
+# Custom patient count
+dbs <- create_pcornet_database(n_patients = 5000)
+
+# Different random seed for unique data
+dbs <- create_pcornet_database(seed = 123)
+
+# In-memory only (don't save to disk)
+dbs <- create_pcornet_database(save_to_disk = FALSE)
+
+# Save to custom directory
+dbs <- create_pcornet_database(output_dir = "data/output")
+
+# Custom profile distribution (more diabetics)
+dbs <- create_pcornet_database(
+  n_patients = 1000,
+  profile_weights = list(
+    healthy = 0.30,
+    diabetic = 0.30,
+    cardiac = 0.15,
+    respiratory = 0.10,
+    mental_health = 0.10,
+    multimorbid = 0.05
+  )
+)
+```
 
 ## Database Schema
 
@@ -80,15 +159,12 @@ All generation options create:
 |-----------------|-----------------------------------------------|
 | `DEMOGRAPHIC`   | Patient demographics linked to MPI via UID    |
 | `DEATH`         | Death records for deceased patients           |
-| `DEATH_CAUSE`   | Cause of death information                    |
 | `ENCOUNTER`     | Patient encounters (IP, ED, AV, OA, IS types) |
 | `DIAGNOSIS`     | ICD-10 diagnoses linked to encounters         |
 | `PROCEDURES`    | CPT procedures linked to encounters           |
 | `LAB_RESULT_CM` | Laboratory results with LOINC codes           |
 | `PRESCRIBING`   | Medication prescriptions with RxNorm codes    |
-| `DISPENSING`    | Medication dispensing records                 |
 | `VITAL`         | Vital signs (height, weight, BP, BMI)         |
-| `CONDITION`     | Patient conditions                            |
 | `PROVIDER`      | Provider directory                            |
 
 ### Key Identifiers
@@ -102,30 +178,20 @@ All generation options create:
 | `MHH_MRN` | MHH0000001 | Memorial Hermann MRN (60% null) |
 | `UTP_MRN` | UTP0000001 | UT Physicians MRN (40% null) |
 
-## Configuration
-
-Edit parameters at the top of `create_synthetic_database.R`:
-
-``` r
-N_PATIENTS <- 3000           # Number of synthetic patients
-CURRENT_DATE <- as.Date("2024-11-27")  # Reference date for data generation
-set.seed(42)                 # Change for different random data
-```
-
 ## Usage Examples
 
 ### Basic Queries
 
 ``` r
 # List all tables
-dbListTables(con_cdw)
-dbListTables(con_mpi)
+dbListTables(dbs$cdw)
+dbListTables(dbs$mpi)
 
 # Count patients
-dbGetQuery(con_cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")
+dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")
 
 # View encounters by type
-dbGetQuery(con_cdw, "
+dbGetQuery(dbs$cdw, "
   SELECT ENC_TYPE, COUNT(*) as count
   FROM ENCOUNTER
   GROUP BY ENC_TYPE
@@ -136,8 +202,8 @@ dbGetQuery(con_cdw, "
 
 ``` r
 # Option 1: Using DuckDB ATTACH
-dbExecute(con_cdw, "ATTACH 'mpi.duckdb' AS mpi")
-dbGetQuery(con_cdw, "
+dbExecute(dbs$cdw, "ATTACH 'mpi.duckdb' AS mpi")
+dbGetQuery(dbs$cdw, "
   SELECT d.PATID, e.First, e.Last, d.BIRTH_DATE
   FROM DEMOGRAPHIC d
   JOIN mpi.EnterpriseRecords e ON d.UID = e.Uid
@@ -146,8 +212,8 @@ dbGetQuery(con_cdw, "
 
 # Option 2: Using dplyr
 library(dplyr)
-demographic <- dbReadTable(con_cdw, "DEMOGRAPHIC")
-enterprise <- dbReadTable(con_mpi, "EnterpriseRecords")
+demographic <- dbReadTable(dbs$cdw, "DEMOGRAPHIC")
+enterprise <- dbReadTable(dbs$mpi, "EnterpriseRecords")
 inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
   select(PATID, First, Last, BIRTH_DATE) %>%
   head(10)
@@ -159,17 +225,17 @@ inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
 source("utility_functions.R")
 
 # View first 10 rows of every table
-print_all_tables(con_cdw, con_mpi)
+print_all_tables(dbs$cdw, dbs$mpi)
 
 # View summary (row counts, column counts)
-print_table_summary(con_cdw, con_mpi)
+print_table_summary(dbs$cdw, dbs$mpi)
 ```
 
 ## Data Characteristics
 
-### Clinical Profiles (Enhanced Generator)
+### Clinical Profiles (Enhanced Mode)
 
-The enhanced generator (`create_synthetic_database_enhanced.R`) assigns patients to clinical profiles:
+The enhanced mode assigns patients to clinical profiles:
 
 | Profile       | Prevalence | Key Features                                |
 |---------------|------------|---------------------------------------------|
@@ -182,9 +248,9 @@ The enhanced generator (`create_synthetic_database_enhanced.R`) assigns patients
 
 This creates clinically coherent data suitable for demos and visualization.
 
-### Random Data (Original Generator)
+### Random Mode
 
-The original generator (`create_synthetic_database.R`) randomly assigns diagnoses, procedures, labs, and medications without clinical logic. Suitable for:
+Randomly assigns diagnoses, procedures, labs, and medications without clinical logic. Suitable for:
 
 -   Testing database schemas and queries
 -   Developing ETL pipelines
@@ -195,7 +261,7 @@ The original generator (`create_synthetic_database.R`) randomly assigns diagnose
 Both generators include:
 
 -   **Missing values**: Configurable NULL rates for various fields
--   **Temporal inconsistencies**: \~5% of encounters fall before birth or after death
+-   **Temporal inconsistencies**: ~5% of encounters fall before birth or after death
 -   **Variable system presence**: Patients appear in 60-95% of source systems
 
 ## License

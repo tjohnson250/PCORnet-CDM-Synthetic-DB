@@ -11,21 +11,24 @@ A synthetic data generator for [PCORnet Common Data Model (CDM)](https://pcornet
 -   Includes simulated data quality issues (missing values, temporal inconsistencies)
 -   Three generation modes: clinically coherent profiles, random, or Synthea import
 
-## Requirements
-
-R packages: - DBI - duckdb - dplyr - lubridate
-
-Install dependencies:
+## Installation
 
 ``` r
-install.packages(c("DBI", "duckdb", "dplyr", "lubridate"))
+# Install devtools if needed
+install.packages("devtools")
+
+# Install the package from GitHub
+devtools::install_github("tjohnson250/PCORnet-CDM-Synthetic-DB")
+
+# Or install from local source
+devtools::install()
 ```
 
 ## Quick Start
 
 ``` r
-# Load the API
-source("R/pcornet.R")
+# Load the package
+library(pcornet.synthetic)
 
 # Generate 100 patients with clinical profiles (default)
 dbs <- create_pcornet_database()
@@ -63,7 +66,7 @@ See `synthea/README.md` for Synthea setup instructions.
 ### Load Existing Databases
 
 ``` r
-source("R/pcornet.R")
+library(pcornet.synthetic)
 dbs <- load_pcornet_database()
 ```
 
@@ -115,7 +118,7 @@ Get row counts and statistics for all tables.
 ## Configuration Examples
 
 ``` r
-source("R/pcornet.R")
+library(pcornet.synthetic)
 
 # Custom patient count
 dbs <- create_pcornet_database(n_patients = 5000)
@@ -263,7 +266,10 @@ inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
 
 ### Utility Functions
 
+The package includes `get_database_summary()` for basic statistics. For additional exploration utilities, you can source the optional helper script:
+
 ``` r
+# Optional utility functions (not part of the package)
 source("utility_functions.R")
 
 # View first 10 rows of every table

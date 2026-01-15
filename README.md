@@ -256,9 +256,24 @@ Randomly assigns diagnoses, procedures, labs, and medications without clinical l
 -   Developing ETL pipelines
 -   Learning the PCORnet CDM structure
 
+### Synthea Mode
+
+Imports data from [Synthea](https://github.com/synthetichealth/synthea), a realistic synthetic patient generator. Characteristics:
+
+-   **Disease progression models**: Patients develop conditions over time with realistic onset, treatment, and outcomes
+-   **SNOMED-CT codes**: Conditions use SNOMED codes mapped to ICD-10 where possible
+-   **Complete medical histories**: Longitudinal records from birth through death (if applicable)
+-   **Realistic demographics**: Based on US Census data for age, gender, race, and geographic distribution
+
+Synthea mode produces the most clinically realistic data but requires:
+1. Java runtime to run Synthea
+2. Pre-generated Synthea CSV output
+
+See `synthea/README.md` for setup instructions.
+
 ### Simulated Data Quality Issues
 
-Both generators include:
+The enhanced and random modes include:
 
 -   **Missing values**: Configurable NULL rates for various fields
 -   **Temporal inconsistencies**: ~5% of encounters fall before birth or after death

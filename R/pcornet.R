@@ -10,6 +10,14 @@ library(lubridate)
 # MAIN API FUNCTIONS
 # =============================================================================
 
+# Default MPI source systems
+DEFAULT_SOURCES <- list(
+  EPIC = list(id_field = "EPIC_PAT_ID", description = "Epic EHR System", null_rate = 0.2),
+  ALLSCRIPTS = list(id_field = "ALLSCRIPTS_PERSON_ID", description = "Allscripts EHR", null_rate = 0.7),
+  MHH_COVID = list(id_field = "MHH_COVID_PERSON", description = "MHH COVID Registry", null_rate = 0.8),
+  UTP = list(id_field = "UTP_MRN", description = "UTP Medical Records", null_rate = 0.7)
+)
+
 #' Create PCORnet CDM Synthetic Database
 #'
 #' Generates synthetic patient data following PCORnet CDM schema with optional
@@ -23,6 +31,8 @@ library(lubridate)
 #' @param output_dir Directory for output files (default: ".")
 #' @param synthea_dir Path to Synthea CSV output (required when mode = "synthea")
 #' @param profile_weights Named list to override default profile distribution
+#' @param sources Named list of source systems for MPI. Each source should have
+#'   id_field, description, and null_rate. Use DEFAULT_SOURCES as a template.
 #'
 #' @return List with:
 #'   \item{cdw}{DBI connection to Clinical Data Warehouse}
@@ -44,6 +54,14 @@ library(lubridate)
 #' dbs <- create_pcornet_database(
 #'   profile_weights = list(diabetic = 0.3, healthy = 0.7)
 #' )
+#'
+#' # Custom source systems
+#' dbs <- create_pcornet_database(
+#'   sources = list(
+#'     EPIC = list(id_field = "EPIC_PAT_ID", description = "Epic EHR", null_rate = 0.1),
+#'     CERNER = list(id_field = "CERNER_ID", description = "Cerner EHR", null_rate = 0.3)
+#'   )
+#' )
 #' }
 #'
 #' @export
@@ -55,7 +73,8 @@ create_pcornet_database <- function(
     save_to_disk = TRUE,
     output_dir = ".",
     synthea_dir = NULL,
-    profile_weights = NULL
+    profile_weights = NULL,
+    sources = NULL
 ) {
   # Validate arguments
   mode <- match.arg(mode)
@@ -74,15 +93,20 @@ create_pcornet_database <- function(
   }
 
   # Set seed for reproducibility
-set.seed(seed)
+  set.seed(seed)
+
+  # Use default sources if not provided
+  if (is.null(sources)) {
+    sources <- DEFAULT_SOURCES
+  }
 
   # Dispatch to appropriate generator
   if (mode == "synthea") {
     result <- .generate_from_synthea(synthea_dir, save_to_disk, output_dir)
   } else if (mode == "enhanced") {
-    result <- .generate_enhanced(n_patients, current_date, profile_weights, save_to_disk, output_dir)
+    result <- .generate_enhanced(n_patients, current_date, profile_weights, save_to_disk, output_dir, sources)
   } else {
-    result <- .generate_random(n_patients, current_date, save_to_disk, output_dir)
+    result <- .generate_random(n_patients, current_date, save_to_disk, output_dir, sources)
   }
 
   # Add metadata
@@ -218,7 +242,7 @@ print.pcornet_summary <- function(x, ...) {
 # RANDOM GENERATION (mode = "random")
 # =============================================================================
 
-.generate_random <- function(n_patients, current_date, save_to_disk, output_dir) {
+.generate_random <- function(n_patients, current_date, save_to_disk, output_dir, sources) {
   cat("Generating random synthetic data for", n_patients, "patients...\n")
 
   CURRENT_DATETIME <- as.POSIXct(paste(current_date, "12:00:00"), tz = "UTC")
@@ -299,9 +323,9 @@ print.pcornet_summary <- function(x, ...) {
   dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
 
   # MPI mappings
-  sources <- c("EPIC", "ALLSCRIPTS", "MHH_COVID", "UTP")
+  source_names <- names(sources)
   mpi_records <- list()
-  for (src in sources) {
+  for (src in source_names) {
     n_in_system <- sample(floor(n_patients * 0.6):floor(n_patients * 0.95), 1)
     uids_in_system <- sample(uids, n_in_system)
     mpi_records[[src]] <- data.frame(
@@ -317,9 +341,9 @@ print.pcornet_summary <- function(x, ...) {
   dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
 
   mpi_src <- data.frame(
-    SRC = sources,
-    LID_SRC = c("EPIC_PAT_ID", "ALLSCRIPTS_PERSON_ID", "MHH_COVID_PERSON", "UTP_MRN"),
-    Description = c("Epic EHR System", "Allscripts EHR", "MHH COVID Registry", "UTP Medical Records"),
+    SRC = source_names,
+    LID_SRC = sapply(sources, function(x) x$id_field),
+    Description = sapply(sources, function(x) x$description),
     stringsAsFactors = FALSE
   )
   dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)
@@ -608,7 +632,7 @@ print.pcornet_summary <- function(x, ...) {
 # ENHANCED GENERATION (mode = "enhanced")
 # =============================================================================
 
-.generate_enhanced <- function(n_patients, current_date, profile_weights, save_to_disk, output_dir) {
+.generate_enhanced <- function(n_patients, current_date, profile_weights, save_to_disk, output_dir, sources) {
   cat("Generating clinically coherent data for", n_patients, "patients...\n")
 
   # Load clinical profiles
@@ -724,9 +748,9 @@ print.pcornet_summary <- function(x, ...) {
 
   dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
 
-  sources <- c("EPIC", "ALLSCRIPTS", "MHH_COVID", "UTP")
+  source_names <- names(sources)
   mpi_records <- list()
-  for (src in sources) {
+  for (src in source_names) {
     n_in_system <- sample(floor(n_patients * 0.6):floor(n_patients * 0.95), 1)
     uids_in_system <- sample(uids, n_in_system)
     mpi_records[[src]] <- data.frame(
@@ -742,9 +766,9 @@ print.pcornet_summary <- function(x, ...) {
   dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
 
   mpi_src <- data.frame(
-    SRC = sources,
-    LID_SRC = c("EPIC_PAT_ID", "ALLSCRIPTS_PERSON_ID", "MHH_COVID_PERSON", "UTP_MRN"),
-    Description = c("Epic EHR System", "Allscripts EHR", "MHH COVID Registry", "UTP Medical Records"),
+    SRC = source_names,
+    LID_SRC = sapply(sources, function(x) x$id_field),
+    Description = sapply(sources, function(x) x$description),
     stringsAsFactors = FALSE
   )
   dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)

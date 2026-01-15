@@ -90,6 +90,7 @@ Main function to generate synthetic PCORnet databases.
 | `output_dir` | "." | Directory for output files |
 | `synthea_dir` | NULL | Path to Synthea CSV output (required for mode="synthea") |
 | `profile_weights` | NULL | Named list to override default profile distribution |
+| `sources` | NULL | Named list of MPI source systems (see Configuring Source Systems) |
 
 **Returns:** List with `$cdw` (CDW connection), `$mpi` (MPI connection), and `$summary` (statistics)
 
@@ -142,9 +143,50 @@ dbs <- create_pcornet_database(
 )
 ```
 
+### Configuring Source Systems
+
+The MPI tracks which source systems each patient appears in. By default, four source systems are configured (EPIC, ALLSCRIPTS, MHH_COVID, UTP). You can customize the source systems using the `sources` parameter:
+
+``` r
+# Custom source systems
+dbs <- create_pcornet_database(
+  n_patients = 500,
+  sources = list(
+    EPIC = list(
+      id_field = "EPIC_PAT_ID",
+      description = "Epic EHR System",
+      null_rate = 0.1  # 10% of patients missing from this system
+    ),
+    CERNER = list(
+      id_field = "CERNER_MRN",
+      description = "Cerner EHR System",
+      null_rate = 0.3
+    ),
+    LAB_SYSTEM = list(
+      id_field = "LAB_ID",
+      description = "Laboratory Information System",
+      null_rate = 0.2
+    )
+  )
+)
+```
+
+Each source system requires:
+- `id_field`: Column name for this system's patient identifier
+- `description`: Human-readable description of the source system
+- `null_rate`: Proportion of patients missing from this system (0.0 to 1.0)
+
 ## Database Schema
 
 ### MPI Database (Master Patient Index)
+
+The MPI (Master Patient Index) is a separate database that manages patient identity across multiple source systems. In healthcare organizations, patients often have different identifiers in different systems (Epic, Cerner, lab systems, etc.). The MPI solves this by:
+
+1. **Assigning a unified identifier (Uid)** to each unique patient
+2. **Tracking source system identifiers** for each patient (which systems they appear in)
+3. **Enabling patient matching** across systems using demographics (name, DOB, SSN)
+
+This two-database structure (MPI + CDW) mirrors real-world healthcare data architectures where identity management is separated from clinical data storage.
 
 | Table | Description |
 |--------------------------|----------------------------------------------|

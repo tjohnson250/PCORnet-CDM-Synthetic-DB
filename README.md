@@ -27,7 +27,8 @@ devtools::install()
 ## Quick Start
 
 ``` r
-# Load the package
+# Load the packages
+library(DBI)
 library(pcornet.synthetic)
 
 # Generate 100 patients with clinical profiles (default)
@@ -228,6 +229,8 @@ This two-database structure (MPI + CDW) mirrors real-world healthcare data archi
 ### Basic Queries
 
 ``` r
+library(DBI)
+
 # List all tables
 dbListTables(dbs$cdw)
 dbListTables(dbs$mpi)
@@ -246,6 +249,8 @@ dbGetQuery(dbs$cdw, "
 ### Join Across Databases
 
 ``` r
+library(DBI)
+
 # Option 1: Using DuckDB ATTACH
 dbExecute(dbs$cdw, "ATTACH 'mpi.duckdb' AS mpi")
 dbGetQuery(dbs$cdw, "

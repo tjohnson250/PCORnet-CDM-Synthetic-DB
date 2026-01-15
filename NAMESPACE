@@ -2,6 +2,8 @@
 
 export(DEFAULT_SOURCES)
 export(create_pcornet_database)
+export(export_to_csv)
+export(export_to_sql_server)
 export(get_database_summary)
 export(load_pcornet_database)
 export(print_all_tables)

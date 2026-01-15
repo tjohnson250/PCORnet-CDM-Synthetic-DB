@@ -285,6 +285,57 @@ summary <- get_database_summary(dbs$cdw, dbs$mpi)
 print(summary)
 ```
 
+### Export to SQL Server
+
+Transfer synthetic data to a Microsoft SQL Server database:
+
+``` r
+# Export with username/password authentication
+export_to_sql_server(
+  dbs,
+  server = "localhost",
+  database = "PCORnet_Dev",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
+
+# Export with Windows integrated authentication
+export_to_sql_server(
+  dbs,
+  server = "localhost",
+  database = "PCORnet_Dev",
+  trusted_connection = TRUE
+)
+
+# Export only specific tables
+export_to_sql_server(
+  dbs,
+  server = "localhost",
+  database = "PCORnet_Dev",
+  uid = "sa",
+  pwd = "YourPassword123",
+  tables = c("DEMOGRAPHIC", "ENCOUNTER", "DIAGNOSIS"),
+  overwrite = TRUE
+)
+```
+
+**Prerequisites:** Install the `odbc` package and Microsoft ODBC Driver 17 for SQL Server:
+- **R package:** `install.packages("odbc")`
+- **Windows:** Download from [Microsoft](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
+- **Mac:** `brew install microsoft/mssql-release/msodbcsql17`
+
+### Export to CSV
+
+Export tables to CSV files for import into other systems:
+
+``` r
+# Export all tables to CSV
+export_to_csv(dbs, output_dir = "pcornet_export")
+
+# Export only CDW tables
+export_to_csv(dbs, output_dir = "pcornet_export", include_mpi = FALSE)
+```
+
 ## Data Characteristics
 
 ### Clinical Profiles (Enhanced Mode)

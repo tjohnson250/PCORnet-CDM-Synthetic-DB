@@ -401,7 +401,7 @@ print.pcornet_summary <- function(x, ...) {
       PATID = paste0("PAT", sprintf("%07d", Uid)),
       DEATH_DATE = as.Date(DeceasedDTTM),
       DEATH_DATE_IMPUTE = "N",
-      DEATH_SOURCE = sample(c("L", "N", "S"), n(), replace = TRUE),
+      DEATH_SOURCE = sample(c("L", "N", "S"), dplyr::n(), replace = TRUE),
       DEATH_MATCH_CONFIDENCE = NA,
       GPC_FLAG = "Y",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
@@ -638,32 +638,8 @@ print.pcornet_summary <- function(x, ...) {
 .generate_enhanced <- function(n_patients, current_date, profile_weights, save_to_disk, output_dir, sources) {
   cat("Generating clinically coherent data for", n_patients, "patients...\n")
 
-  # Load clinical profiles
-  script_dir <- dirname(sys.frame(1)$ofile)
-  if (is.null(script_dir) || script_dir == "") {
-    script_dir <- "."
-  }
 
-  # Try to find clinical_profiles relative to R/ or current directory
-  profile_paths <- c(
-    file.path(script_dir, "..", "clinical_profiles", "clinical_profiles.R"),
-    file.path("clinical_profiles", "clinical_profiles.R"),
-    "clinical_profiles/clinical_profiles.R"
-  )
-
-  profile_loaded <- FALSE
-  for (path in profile_paths) {
-    if (file.exists(path)) {
-      source(path)
-      source(file.path(dirname(path), "profile_generator.R"))
-      profile_loaded <- TRUE
-      break
-    }
-  }
-
-  if (!profile_loaded) {
-    stop("Could not find clinical_profiles/clinical_profiles.R")
-  }
+  # Clinical profiles are now loaded as part of the package (R/clinical_profiles.R)
 
   # Apply custom profile weights if provided
   if (!is.null(profile_weights)) {
@@ -828,7 +804,7 @@ print.pcornet_summary <- function(x, ...) {
       PATID = paste0("PAT", sprintf("%07d", Uid)),
       DEATH_DATE = as.Date(DeceasedDTTM),
       DEATH_DATE_IMPUTE = "N",
-      DEATH_SOURCE = sample(c("L", "N", "S"), n(), replace = TRUE),
+      DEATH_SOURCE = sample(c("L", "N", "S"), dplyr::n(), replace = TRUE),
       GPC_FLAG = "Y",
       UID = Uid
     )
@@ -1054,14 +1030,16 @@ print.pcornet_summary <- function(x, ...) {
 
 .generate_from_synthea <- function(synthea_dir, save_to_disk, output_dir) {
   # Load and call the Synthea transformation script
+  # Try multiple locations to find the script
   synthea_script_paths <- c(
     "synthea/synthea_to_pcornet.R",
-    file.path(dirname(sys.frame(1)$ofile), "..", "synthea", "synthea_to_pcornet.R")
+    system.file("synthea", "synthea_to_pcornet.R", package = "pcornet.synthetic"),
+    file.path(getwd(), "synthea", "synthea_to_pcornet.R")
   )
 
   script_loaded <- FALSE
   for (path in synthea_script_paths) {
-    if (file.exists(path)) {
+    if (nchar(path) > 0 && file.exists(path)) {
       source(path)
       script_loaded <- TRUE
       break
@@ -1069,7 +1047,8 @@ print.pcornet_summary <- function(x, ...) {
   }
 
   if (!script_loaded) {
-    stop("Could not find synthea/synthea_to_pcornet.R")
+    stop("Could not find synthea/synthea_to_pcornet.R. ",
+         "Make sure you're running from the package directory or the synthea script is installed.")
   }
 
   result <- load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)

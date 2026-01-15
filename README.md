@@ -321,6 +321,34 @@ The enhanced and random modes include:
 -   **Temporal inconsistencies**: ~5% of encounters fall before birth or after death
 -   **Variable system presence**: Patients appear in 60-95% of source systems
 
+## Development
+
+### Running Tests
+
+This project uses testthat for testing. To run the tests:
+
+``` r
+# Install devtools if needed
+install.packages("devtools")
+
+# Install the package locally
+devtools::install()
+
+# Run tests
+devtools::test()
+
+# Run R CMD check (comprehensive)
+devtools::check()
+```
+
+### Test Coverage
+
+Tests cover:
+- `create_pcornet_database()` - Structure, patient count, validation, modes, reproducibility
+- `load_pcornet_database()` - Error handling, file loading
+- `get_database_summary()` - Structure, optional parameters
+- Internal helper functions - Date generation, NA sampling
+
 ## License
 
 MIT License

@@ -1,0 +1,23 @@
+Package: pcornet.synthetic
+Title: PCORnet CDM Synthetic Database Generator
+Version: 1.0.0
+Authors@R:
+    person("PCORnet", "Synthetic", , "synthetic@example.com", role = c("aut", "cre"))
+Description: Generates synthetic patient data following the PCORnet Common Data
+    Model (CDM) schema. Creates two linked DuckDB databases: a Clinical Data
+    Warehouse (CDW) with PCORnet tables and a Master Patient Index (MPI) for
+    patient identity management. Supports three generation modes: clinically
+    coherent profiles, random data, and Synthea import.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports:
+    DBI,
+    duckdb,
+    dplyr,
+    lubridate
+Suggests:
+    testthat (>= 3.0.0),
+    tidyr
+Config/testthat/edition: 3

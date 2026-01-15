@@ -1,16 +1,19 @@
-# PCORnet CDM Synthetic Database Generator
-# Function-based API for generating synthetic PCORnet CDM and MPI databases
-
-library(DBI)
-library(duckdb)
-library(dplyr)
-library(lubridate)
+#' @title PCORnet CDM Synthetic Database Generator
+#' @description Function-based API for generating synthetic PCORnet CDM and MPI databases
+#'
+#' @import DBI
+#' @import duckdb
+#' @import dplyr
+#' @import lubridate
+#' @keywords internal
+"_PACKAGE"
 
 # =============================================================================
 # MAIN API FUNCTIONS
 # =============================================================================
 
-# Default MPI source systems
+#' Default MPI source systems
+#' @export
 DEFAULT_SOURCES <- list(
   EPIC = list(id_field = "EPIC_PAT_ID", description = "Epic EHR System", null_rate = 0.2),
   ALLSCRIPTS = list(id_field = "ALLSCRIPTS_PERSON_ID", description = "Allscripts EHR", null_rate = 0.7),

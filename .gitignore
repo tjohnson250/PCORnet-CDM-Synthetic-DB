@@ -58,4 +58,13 @@ wheels/
 # RStudio
 .Rproj.user/
 
+# R package build artifacts
+*.tar.gz
+*.Rcheck/
+man/*.Rd
+inst/doc
+Meta/
+doc/
+NAMESPACE.bak
+
 .DS_Store

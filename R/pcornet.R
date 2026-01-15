@@ -1029,29 +1029,8 @@ print.pcornet_summary <- function(x, ...) {
 # =============================================================================
 
 .generate_from_synthea <- function(synthea_dir, save_to_disk, output_dir) {
-  # Load and call the Synthea transformation script
-  # Try multiple locations to find the script
-  synthea_script_paths <- c(
-    "synthea/synthea_to_pcornet.R",
-    system.file("synthea", "synthea_to_pcornet.R", package = "pcornet.synthetic"),
-    file.path(getwd(), "synthea", "synthea_to_pcornet.R")
-  )
-
-  script_loaded <- FALSE
-  for (path in synthea_script_paths) {
-    if (nchar(path) > 0 && file.exists(path)) {
-      source(path)
-      script_loaded <- TRUE
-      break
-    }
-  }
-
-  if (!script_loaded) {
-    stop("Could not find synthea/synthea_to_pcornet.R. ",
-         "Make sure you're running from the package directory or the synthea script is installed.")
-  }
-
-  result <- load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)
+  # Call the internal Synthea import function
+  result <- .load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)
 
   # Get counts for summary
   n_patients <- dbGetQuery(result$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")[[1]]

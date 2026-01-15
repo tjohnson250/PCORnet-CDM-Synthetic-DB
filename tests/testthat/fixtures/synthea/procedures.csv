@@ -1,0 +1,4 @@
+DATE,PATIENT,ENCOUNTER,CODE,DESCRIPTION,BASE_COST,REASONCODE,REASONDESCRIPTION
+2022-01-15,patient-001,enc-001,43789009,Blood glucose measurement,25,44054006,Type 2 diabetes mellitus
+2023-02-11,patient-002,enc-003,40701008,Echocardiography,500,84114007,Heart failure
+2022-06-15,patient-003,enc-005,225358003,Vital signs measurement,15,,

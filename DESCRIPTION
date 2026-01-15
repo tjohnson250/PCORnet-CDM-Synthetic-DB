@@ -16,8 +16,8 @@ Imports:
     DBI,
     duckdb,
     dplyr,
-    lubridate
-Suggests:
-    testthat (>= 3.0.0),
+    lubridate,
     tidyr
+Suggests:
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -1,0 +1,11 @@
+synthea_class,pcornet_enc_type,description
+ambulatory,AV,Ambulatory Visit
+emergency,ED,Emergency Department
+inpatient,IP,Inpatient Hospital Stay
+wellness,AV,Wellness Visit (mapped to Ambulatory)
+urgentcare,ED,Urgent Care (mapped to Emergency)
+outpatient,OA,Other Ambulatory
+hospice,IS,Hospice (Institutional Stay)
+home,OA,Home Health (Other Ambulatory)
+snf,IS,Skilled Nursing Facility
+virtual,OA,Telehealth/Virtual Visit

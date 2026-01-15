@@ -1,0 +1,13 @@
+DATE,PATIENT,ENCOUNTER,CODE,DESCRIPTION,VALUE,UNITS,TYPE
+2022-01-15,patient-001,enc-001,8302-2,Body Height,175,cm,numeric
+2022-01-15,patient-001,enc-001,29463-7,Body Weight,82,kg,numeric
+2022-01-15,patient-001,enc-001,39156-5,Body Mass Index,26.8,kg/m2,numeric
+2022-01-15,patient-001,enc-001,8480-6,Systolic Blood Pressure,128,mm[Hg],numeric
+2022-01-15,patient-001,enc-001,8462-4,Diastolic Blood Pressure,82,mm[Hg],numeric
+2022-01-15,patient-001,enc-001,4548-4,Hemoglobin A1c,7.2,%,numeric
+2022-03-20,patient-001,enc-002,8480-6,Systolic Blood Pressure,145,mm[Hg],numeric
+2022-03-20,patient-001,enc-002,8462-4,Diastolic Blood Pressure,92,mm[Hg],numeric
+2023-02-10,patient-002,enc-003,8302-2,Body Height,165,cm,numeric
+2023-02-10,patient-002,enc-003,29463-7,Body Weight,70,kg,numeric
+2022-06-15,patient-003,enc-005,8302-2,Body Height,160,cm,numeric
+2022-06-15,patient-003,enc-005,29463-7,Body Weight,55,kg,numeric

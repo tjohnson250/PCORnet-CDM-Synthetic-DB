@@ -266,17 +266,18 @@ inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
 
 ### Utility Functions
 
-The package includes `get_database_summary()` for basic statistics. For additional exploration utilities, you can source the optional helper script:
+The package includes several utility functions for exploring the databases:
 
 ``` r
-# Optional utility functions (not part of the package)
-source("utility_functions.R")
-
 # View first 10 rows of every table
 print_all_tables(dbs$cdw, dbs$mpi)
 
 # View summary (row counts, column counts)
 print_table_summary(dbs$cdw, dbs$mpi)
+
+# Get summary as a data structure
+summary <- get_database_summary(dbs$cdw, dbs$mpi)
+print(summary)
 ```
 
 ## Data Characteristics

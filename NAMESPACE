@@ -4,6 +4,8 @@ export(DEFAULT_SOURCES)
 export(create_pcornet_database)
 export(get_database_summary)
 export(load_pcornet_database)
+export(print_all_tables)
+export(print_table_summary)
 
 S3method(print, pcornet_summary)
 

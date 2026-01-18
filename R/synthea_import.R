@@ -81,12 +81,28 @@ if (map_file == "") {
 
 #' Load and transform Synthea data to PCORnet CDM format
 #'
-#' @param synthea_dir Path to Synthea output/csv directory
+#' Imports Synthea CSV output and converts it to PCORnet CDM format in DuckDB
+#' databases. This provides the most clinically realistic synthetic data as
+#' Synthea uses disease state models informed by CDC, NIH, and clinical research.
+#'
+#' @param synthea_dir Path to Synthea output/csv directory containing patients.csv
+#'   and other Synthea output files (encounters.csv, conditions.csv, etc.)
 #' @param save_to_disk Whether to save databases to disk files (default: TRUE)
 #' @param output_dir Directory for output files (default: ".")
-#' @return List with cdw and mpi database connections
-#' @keywords internal
-.load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = ".") {
+#' @return List with `$cdw` (CDW connection) and `$mpi` (MPI connection)
+#'
+#' @examples
+#' \dontrun{
+#' # Generate data with Synthea first:
+#' # java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true
+#'
+#' # Then import into PCORnet format
+#' dbs <- load_synthea_data("~/synthea/output/csv")
+#' DBI::dbListTables(dbs$cdw)
+#' }
+#'
+#' @export
+load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = ".") {
 
   cat("Loading Synthea data from:", synthea_dir, "\n")
 

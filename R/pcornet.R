@@ -1030,7 +1030,7 @@ print.pcornet_summary <- function(x, ...) {
 
 .generate_from_synthea <- function(synthea_dir, save_to_disk, output_dir) {
   # Call the internal Synthea import function
-  result <- .load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)
+  result <- load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)
 
   # Get counts for summary
   n_patients <- dbGetQuery(result$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")[[1]]

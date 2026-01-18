@@ -76,15 +76,17 @@ Output will be in `./output/csv/`.
 After generating Synthea data:
 
 ```r
-# In R, from the PCORnet-CDM-Synthetic-DB directory
-source("synthea/synthea_to_pcornet.R")
+library(pcornet.synthetic)
 
 # Convert Synthea CSV to PCORnet format
-dbs <- load_synthea_data("/path/to/synthea/output/csv")
+dbs <- load_synthea_data("~/synthea/output/csv")
 
 # Access the databases
-con_cdw <- dbs$cdw
-con_mpi <- dbs$mpi
+dbs$cdw  # Clinical Data Warehouse
+dbs$mpi  # Master Patient Index
+
+# List tables
+DBI::dbListTables(dbs$cdw)
 ```
 
 ## Synthea Output Files

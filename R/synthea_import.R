@@ -466,13 +466,16 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     procedures$UID <- patient_map$uid[match(procedures$PATIENT, patient_map$synthea_id)]
     procedures$ENCOUNTERID <- encounter_map$encounterid[match(procedures$ENCOUNTER, encounter_map$synthea_id)]
 
+    # Handle both DATE (old format) and START (current Synthea format)
+    proc_date_col <- if ("START" %in% names(procedures)) procedures$START else procedures$DATE
+
     procedures_df <- data.frame(
       PROCEDURESID = paste0("PX", sprintf("%010d", 1:nrow(procedures))),
       PATID = procedures$PATID,
       ENCOUNTERID = procedures$ENCOUNTERID,
-      ADMIT_DATE = as.Date(substr(procedures$DATE, 1, 10)),
+      ADMIT_DATE = as.Date(substr(proc_date_col, 1, 10)),
       PX = paste0("SNOMED:", procedures$CODE),
-      PX_DATE = as.Date(substr(procedures$DATE, 1, 10)),
+      PX_DATE = as.Date(substr(proc_date_col, 1, 10)),
       PX_TYPE = "SM",
       PX_SOURCE = "OD",
       PPX = "P",

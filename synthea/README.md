@@ -24,46 +24,52 @@ brew install openjdk@17
 
 ## Synthea Setup
 
-### 1. Clone Synthea
+### 1. Download Synthea
+
+Download the pre-built JAR file from the official releases:
 
 ```bash
-git clone https://github.com/synthetichealth/synthea.git
-cd synthea
+# Create a directory for Synthea
+mkdir -p ~/synthea && cd ~/synthea
+
+# Download the latest release
+curl -L -O https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar
 ```
 
-### 2. Build Synthea
+Or download directly from your browser: [synthea-with-dependencies.jar](https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar)
+
+### 2. Generate Patients
 
 ```bash
-./gradlew build check test
-```
+cd ~/synthea
 
-On Windows, use `gradlew.bat` instead.
-
-### 3. Configure for CSV Output
-
-Edit `src/main/resources/synthea.properties`:
-
-```properties
-exporter.csv.export = true
-exporter.fhir.export = false
-```
-
-Setting `exporter.fhir.export = false` speeds up generation if you only need CSV.
-
-### 4. Generate Patients
-
-```bash
-# Generate 100 patients from Texas
-./run_synthea -p 100 Texas
+# Generate 100 patients from Texas with CSV output
+java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true Texas
 
 # Generate 1000 patients from any US state
-./run_synthea -p 1000
+java -jar synthea-with-dependencies.jar -p 1000 --exporter.csv.export=true
 
-# Generate specific conditions
-./run_synthea -p 100 -m diabetes
+# Generate specific conditions (e.g., diabetes)
+java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true -m diabetes
+
+# View all available options
+java -jar synthea-with-dependencies.jar -h
 ```
 
-Output will be in `synthea/output/csv/`.
+Output will be in `./output/csv/`.
+
+### Common Options
+
+| Option | Description |
+|--------|-------------|
+| `-p 100` | Generate 100 patients |
+| `-s 12345` | Set random seed for reproducibility |
+| `-a 30-50` | Limit to patients aged 30-50 |
+| `-g F` | Generate only female patients |
+| `--exporter.csv.export=true` | Enable CSV output (required for PCORnet import) |
+| `--exporter.fhir.export=false` | Disable FHIR output (speeds up generation) |
+| `Texas` | Generate patients from Texas |
+| `Texas Houston` | Generate patients from Houston, Texas |
 
 ## Convert to PCORnet CDM
 
@@ -112,16 +118,26 @@ The converter includes mappings for common conditions. Unmapped SNOMED codes are
 Synthea can generate patients with specific conditions:
 
 ```bash
-./run_synthea -p 100 -m diabetes
-./run_synthea -p 100 -m lung_cancer
-./run_synthea -p 100 -m covid19
+java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true -m diabetes
+java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true -m lung_cancer
+java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true -m covid19
 ```
 
 See [Synthea Wiki](https://github.com/synthetichealth/synthea/wiki) for available modules.
 
 ### Adjust Demographics
 
-Edit `src/main/resources/synthea.properties`:
+Pass configuration options on the command line:
+
+```bash
+# Patients aged 18-85 with 10 years of medical history
+java -jar synthea-with-dependencies.jar -p 100 \
+  --exporter.csv.export=true \
+  -a 18-85 \
+  --exporter.years_of_history=10
+```
+
+Alternatively, create a `synthea.properties` file in your working directory:
 
 ```properties
 # Age range
@@ -130,6 +146,15 @@ generate.demographics.maximum_age = 85
 
 # Years of medical history
 exporter.years_of_history = 10
+
+# Enable CSV export
+exporter.csv.export = true
+```
+
+Then run with the config file:
+
+```bash
+java -jar synthea-with-dependencies.jar -p 100 -c synthea.properties
 ```
 
 ## Troubleshooting
@@ -148,12 +173,12 @@ export PATH=$JAVA_HOME/bin:$PATH
 For large populations, increase Java heap:
 
 ```bash
-./run_synthea -p 10000 -- -Xms2g -Xmx4g
+java -Xms2g -Xmx4g -jar synthea-with-dependencies.jar -p 10000 --exporter.csv.export=true
 ```
 
 ### Missing CSV Files
 
-Ensure `exporter.csv.export = true` in synthea.properties and re-run generation.
+Ensure you included `--exporter.csv.export=true` when running Synthea and re-run generation.
 
 ## Resources
 

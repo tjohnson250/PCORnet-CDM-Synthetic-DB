@@ -460,14 +460,29 @@ print.pcornet_summary <- function(x, ...) {
       los_days <- switch(enc_type, "IP" = sample(1:14, 1), "ED" = sample(0:1, 1),
                          "IS" = sample(1:7, 1), 0)
 
+      discharge_disp <- sample(c("A", "E", "NI", "UN", "OT"), 1)
+      discharge_status <- sample(c("AF", "AL", "AM", "AW", "EX", "HH", "HO", "HS", "IP", "NH", "RH", "RS", "SH", "SN", "NI", "UN", "OT"), 1)
+      payer_type <- sample(c("1", "2", "3", "4", "5", "6", "NI", "UN", "OT"), 1)
       encounters[[enc_id]] <- data.frame(
         ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
         PATID = patid,
         ADMIT_DATE = admit_dates[j],
         ADMIT_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
         DISCHARGE_DATE = if (los_days > 0) admit_dates[j] + los_days else NA,
+        DISCHARGE_TIME = if (los_days > 0) sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)) else NA,
         ENC_TYPE = enc_type,
         PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+        FACILITY_LOCATION = sample(c("77001", "77002", "77003", "77004", "77005"), 1),
+        FACILITYID = paste0("FAC", sprintf("%05d", sample(1:100, 1))),
+        DISCHARGE_DISPOSITION = discharge_disp,
+        DISCHARGE_STATUS = discharge_status,
+        DRG = if (enc_type == "IP") sprintf("%03d", sample(1:999, 1)) else NA,
+        DRG_TYPE = if (enc_type == "IP") sample(c("01", "02"), 1) else NA,
+        ADMITTING_SOURCE = sample(c("AF", "AL", "AV", "ED", "HH", "HO", "HS", "IP", "NH", "RH", "RS", "SN", "NI", "UN", "OT"), 1),
+        RAW_ENC_TYPE = enc_type,
+        RAW_DISCHARGE_DISPOSITION = discharge_disp,
+        RAW_DISCHARGE_STATUS = discharge_status,
+        PAYER_TYPE_PRIMARY = payer_type,
         CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
         GPC_FLAG = "Y",
         UID = i,
@@ -478,13 +493,28 @@ print.pcornet_summary <- function(x, ...) {
       n_dx <- sample(1:5, 1)
       for (k in 1:n_dx) {
         code_idx <- sample(1:length(icd10_codes), 1)
+        dx_code <- icd10_codes[code_idx]
+        pdx_val <- if (k == 1) "P" else "S"
+        dx_source <- sample(c("AD", "DI", "FI", "IN", "NI", "UN", "OT"), 1)
         diagnoses[[dx_id]] <- data.frame(
           DIAGNOSISID = paste0("DX", sprintf("%010d", dx_id)),
           PATID = patid,
           ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
-          DX = icd10_codes[code_idx],
+          DX = dx_code,
           DX_TYPE = "10",
-          PDX = if (k == 1) "P" else "S",
+          DX_DATE = admit_dates[j],
+          DX_SOURCE = dx_source,
+          DX_ORIGIN = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+          DX_POA = sample(c("Y", "N", "U", "W", "1", "NI", "UN", "OT"), 1),
+          PDX = pdx_val,
+          ADMIT_DATE = admit_dates[j],
+          ENC_TYPE = enc_type,
+          PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+          RAW_DX = dx_code,
+          RAW_DX_TYPE = "ICD-10-CM",
+          RAW_DX_SOURCE = dx_source,
+          RAW_PDX = pdx_val,
+          CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
           UID = i,
           stringsAsFactors = FALSE
         )
@@ -495,12 +525,24 @@ print.pcornet_summary <- function(x, ...) {
       if (runif(1) < 0.7) {
         n_px <- sample(1:3, 1)
         for (k in 1:n_px) {
+          px_code <- sample(cpt_codes, 1)
+          px_source <- sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1)
           procedures[[px_id]] <- data.frame(
             PROCEDURESID = paste0("PX", sprintf("%010d", px_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
-            PX = sample(cpt_codes, 1),
+            PX = px_code,
             PX_TYPE = "CH",
+            PX_DATE = admit_dates[j],
+            PX_SOURCE = px_source,
+            PPX = if (k == 1) "P" else "S",
+            ADMIT_DATE = admit_dates[j],
+            ENC_TYPE = enc_type,
+            PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+            RAW_PX = px_code,
+            RAW_PX_TYPE = "CPT",
+            RAW_PX_NAME = paste0("Procedure ", px_code),
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -515,13 +557,40 @@ print.pcornet_summary <- function(x, ...) {
           test_idx <- sample(1:nrow(lab_tests), 1)
           result_num <- runif(1, lab_tests$NORMAL_LOW[test_idx] * 0.8,
                               lab_tests$NORMAL_HIGH[test_idx] * 1.2)
+          result_num <- round(result_num, 2)
+          norm_low <- lab_tests$NORMAL_LOW[test_idx]
+          norm_high <- lab_tests$NORMAL_HIGH[test_idx]
+          abn_ind <- if (result_num < norm_low) "AB" else if (result_num > norm_high) "AH" else "NI"
           lab_results[[lab_id]] <- data.frame(
             LAB_RESULT_CM_ID = paste0("LAB", sprintf("%010d", lab_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
             LAB_LOINC = lab_tests$LOINC[test_idx],
-            RESULT_NUM = round(result_num, 2),
+            LAB_PX = lab_tests$LOINC[test_idx],
+            LAB_PX_TYPE = "LC",
+            LAB_ORDER_DATE = admit_dates[j],
+            RESULT_DATE = admit_dates[j],
+            RESULT_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
+            RESULT_NUM = result_num,
+            RESULT_QUAL = sample(c("POSITIVE", "NEGATIVE", "NI", "UN", "OT"), 1, prob = c(0.1, 0.1, 0.6, 0.1, 0.1)),
+            RESULT_MODIFIER = sample(c("EQ", "GE", "GT", "LE", "LT", "NI"), 1, prob = c(0.8, 0.05, 0.05, 0.05, 0.03, 0.02)),
             RESULT_UNIT = lab_tests$UNIT[test_idx],
+            NORM_RANGE_LOW = as.character(norm_low),
+            NORM_RANGE_HIGH = as.character(norm_high),
+            NORM_MODIFIER_LOW = "EQ",
+            NORM_MODIFIER_HIGH = "EQ",
+            ABN_IND = abn_ind,
+            SPECIMEN_SOURCE = sample(c("BLOOD", "URINE", "CSF", "OTHER", "NI", "UN", "OT"), 1, prob = c(0.5, 0.2, 0.05, 0.05, 0.1, 0.05, 0.05)),
+            SPECIMEN_DATE = admit_dates[j],
+            PRIORITY = sample(c("R", "S", "NI", "UN", "OT"), 1),
+            RESULT_LOC = sample(c("L", "P", "NI", "UN", "OT"), 1),
+            LAB_LOINC_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+            LAB_RESULT_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+            RAW_LAB_NAME = lab_tests$NAME[test_idx],
+            RAW_LAB_CODE = lab_tests$LOINC[test_idx],
+            RAW_RESULT = as.character(result_num),
+            RAW_UNIT = lab_tests$UNIT[test_idx],
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -534,12 +603,44 @@ print.pcornet_summary <- function(x, ...) {
         n_rx <- sample(1:3, 1)
         for (k in 1:n_rx) {
           med_idx <- sample(1:nrow(medications), 1)
+          days_supply <- sample(c(7, 14, 30, 60, 90), 1)
+          refills <- sample(0:5, 1)
+          quantity <- sample(c(30, 60, 90, 120), 1)
+          dose <- sample(c("5", "10", "20", "25", "50", "100", "250", "500"), 1)
+          dose_unit <- sample(c("mg", "mcg", "g", "mL"), 1)
+          frequency <- sample(c("QD", "BID", "TID", "QID", "PRN", "QHS"), 1)
+          route <- sample(c("PO", "IV", "IM", "SC", "TOP", "INH", "NI", "UN", "OT"), 1)
           prescriptions[[rx_id]] <- data.frame(
             PRESCRIBINGID = paste0("RX", sprintf("%010d", rx_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
+            RX_PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+            RX_ORDER_DATE = admit_dates[j],
+            RX_ORDER_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
+            RX_START_DATE = admit_dates[j],
+            RX_END_DATE = admit_dates[j] + days_supply,
+            RX_DAYS_SUPPLY = days_supply,
+            RX_REFILLS = refills,
+            RX_QUANTITY = quantity,
+            RX_DOSE_ORDERED = dose,
+            RX_DOSE_ORDERED_UNIT = dose_unit,
+            RX_DOSE_FORM = sample(c("TAB", "CAP", "SOL", "INJ", "CRE", "OIN", "NI", "UN", "OT"), 1),
+            RX_FREQUENCY = frequency,
+            RX_ROUTE = route,
+            RX_BASIS = sample(c("01", "02", "NI", "UN", "OT"), 1),
+            RX_PRN_FLAG = sample(c("Y", "N"), 1, prob = c(0.2, 0.8)),
+            RX_DISPENSE_AS_WRITTEN = sample(c("Y", "N", "NI", "UN", "OT"), 1),
+            RX_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
             RXNORM_CUI = medications$RXNORM[med_idx],
             RAW_RX_MED_NAME = medications$NAME[med_idx],
+            RAW_RX_FREQUENCY = frequency,
+            RAW_RX_DOSE_ORDERED = dose,
+            RAW_RX_DOSE_ORDERED_UNIT = dose_unit,
+            RAW_RX_ROUTE = route,
+            RAW_RX_REFILLS = as.character(refills),
+            RAW_RXNORM_CUI = as.character(medications$RXNORM[med_idx]),
+            RAW_RX_NDC = paste0(sample(10000:99999, 1), "-", sample(1000:9999, 1), "-", sample(10:99, 1)),
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -866,13 +967,29 @@ print.pcornet_summary <- function(x, ...) {
       enc_type <- select_encounter_type(profile_name)
       los_days <- calculate_length_of_stay(enc_type)
 
+      discharge_disp <- sample(c("A", "E", "NI", "UN", "OT"), 1)
+      discharge_status <- sample(c("AF", "AL", "AM", "AW", "EX", "HH", "HO", "HS", "IP", "NH", "RH", "RS", "SH", "SN", "NI", "UN", "OT"), 1)
+      payer_type <- sample(c("1", "2", "3", "4", "5", "6", "NI", "UN", "OT"), 1)
       all_encounters[[enc_id]] <- data.frame(
         ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
         PATID = patid,
         ADMIT_DATE = admit_dates[j],
+        ADMIT_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
         DISCHARGE_DATE = if (los_days > 0) admit_dates[j] + los_days else NA,
+        DISCHARGE_TIME = if (los_days > 0) sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)) else NA,
         ENC_TYPE = enc_type,
         PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+        FACILITY_LOCATION = sample(c("77001", "77002", "77003", "77004", "77005"), 1),
+        FACILITYID = paste0("FAC", sprintf("%05d", sample(1:100, 1))),
+        DISCHARGE_DISPOSITION = discharge_disp,
+        DISCHARGE_STATUS = discharge_status,
+        DRG = if (enc_type == "IP") sprintf("%03d", sample(1:999, 1)) else NA,
+        DRG_TYPE = if (enc_type == "IP") sample(c("01", "02"), 1) else NA,
+        ADMITTING_SOURCE = sample(c("AF", "AL", "AV", "ED", "HH", "HO", "HS", "IP", "NH", "RH", "RS", "SN", "NI", "UN", "OT"), 1),
+        RAW_ENC_TYPE = enc_type,
+        RAW_DISCHARGE_DISPOSITION = discharge_disp,
+        RAW_DISCHARGE_STATUS = discharge_status,
+        PAYER_TYPE_PRIMARY = payer_type,
         CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
         GPC_FLAG = "Y",
         UID = i,
@@ -883,14 +1000,27 @@ print.pcornet_summary <- function(x, ...) {
       dx_data <- generate_profile_diagnoses(profile, is_first_encounter = (j == 1))
       if (!is.null(dx_data) && nrow(dx_data) > 0) {
         for (k in 1:nrow(dx_data)) {
+          pdx_val <- if (dx_data$is_primary[k]) "P" else "S"
+          dx_source <- sample(c("AD", "DI", "FI", "IN", "NI", "UN", "OT"), 1)
           all_diagnoses[[dx_id]] <- data.frame(
             DIAGNOSISID = paste0("DX", sprintf("%010d", dx_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
             DX = dx_data$code[k],
             DX_TYPE = "10",
-            PDX = if (dx_data$is_primary[k]) "P" else "S",
+            DX_DATE = admit_dates[j],
+            DX_SOURCE = dx_source,
+            DX_ORIGIN = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+            DX_POA = sample(c("Y", "N", "U", "W", "1", "NI", "UN", "OT"), 1),
+            PDX = pdx_val,
+            ADMIT_DATE = admit_dates[j],
+            ENC_TYPE = enc_type,
+            PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
             RAW_DX = dx_data$description[k],
+            RAW_DX_TYPE = "ICD-10-CM",
+            RAW_DX_SOURCE = dx_source,
+            RAW_PDX = pdx_val,
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -907,10 +1037,31 @@ print.pcornet_summary <- function(x, ...) {
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
             LAB_LOINC = lab_data$loinc[k],
+            LAB_PX = lab_data$loinc[k],
+            LAB_PX_TYPE = "LC",
+            LAB_ORDER_DATE = admit_dates[j],
+            RESULT_DATE = admit_dates[j],
+            RESULT_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
             RESULT_NUM = lab_data$value[k],
+            RESULT_QUAL = sample(c("POSITIVE", "NEGATIVE", "NI", "UN", "OT"), 1, prob = c(0.1, 0.1, 0.6, 0.1, 0.1)),
+            RESULT_MODIFIER = sample(c("EQ", "GE", "GT", "LE", "LT", "NI"), 1, prob = c(0.8, 0.05, 0.05, 0.05, 0.03, 0.02)),
             RESULT_UNIT = lab_data$unit[k],
+            NORM_RANGE_LOW = NA,
+            NORM_RANGE_HIGH = NA,
+            NORM_MODIFIER_LOW = "EQ",
+            NORM_MODIFIER_HIGH = "EQ",
             ABN_IND = lab_data$abn_ind[k],
+            SPECIMEN_SOURCE = sample(c("BLOOD", "URINE", "CSF", "OTHER", "NI", "UN", "OT"), 1, prob = c(0.5, 0.2, 0.05, 0.05, 0.1, 0.05, 0.05)),
+            SPECIMEN_DATE = admit_dates[j],
+            PRIORITY = sample(c("R", "S", "NI", "UN", "OT"), 1),
+            RESULT_LOC = sample(c("L", "P", "NI", "UN", "OT"), 1),
+            LAB_LOINC_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+            LAB_RESULT_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
             RAW_LAB_NAME = lab_data$name[k],
+            RAW_LAB_CODE = lab_data$loinc[k],
+            RAW_RESULT = as.character(lab_data$value[k]),
+            RAW_UNIT = lab_data$unit[k],
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -922,13 +1073,23 @@ print.pcornet_summary <- function(x, ...) {
       px_data <- generate_profile_procedures(profile, enc_type)
       if (!is.null(px_data) && nrow(px_data) > 0) {
         for (k in 1:nrow(px_data)) {
+          px_source <- sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1)
           all_procedures[[px_id]] <- data.frame(
             PROCEDURESID = paste0("PX", sprintf("%010d", px_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
             PX = px_data$cpt[k],
             PX_TYPE = "CH",
-            RAW_PX = px_data$name[k],
+            PX_DATE = admit_dates[j],
+            PX_SOURCE = px_source,
+            PPX = if (k == 1) "P" else "S",
+            ADMIT_DATE = admit_dates[j],
+            ENC_TYPE = enc_type,
+            PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+            RAW_PX = px_data$cpt[k],
+            RAW_PX_TYPE = "CPT",
+            RAW_PX_NAME = px_data$name[k],
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )
@@ -978,14 +1139,42 @@ print.pcornet_summary <- function(x, ...) {
         med_indices <- sample(1:nrow(patient_medications), n_meds)
         for (k in med_indices) {
           med <- patient_medications[k, ]
+          days_supply <- sample(c(7, 14, 30, 60, 90), 1)
+          refills <- sample(0:5, 1)
+          quantity <- sample(c(30, 60, 90, 120), 1)
+          frequency <- sample(c("QD", "BID", "TID", "QID", "PRN", "QHS"), 1)
+          route <- sample(c("PO", "IV", "IM", "SC", "TOP", "INH", "NI", "UN", "OT"), 1)
           all_medications[[rx_id]] <- data.frame(
             PRESCRIBINGID = paste0("RX", sprintf("%010d", rx_id)),
             PATID = patid,
             ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
-            RXNORM_CUI = med$rxnorm,
-            RAW_RX_MED_NAME = med$name,
+            RX_PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, 1))),
+            RX_ORDER_DATE = admit_dates[j],
+            RX_ORDER_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
+            RX_START_DATE = admit_dates[j],
+            RX_END_DATE = admit_dates[j] + days_supply,
+            RX_DAYS_SUPPLY = days_supply,
+            RX_REFILLS = refills,
+            RX_QUANTITY = quantity,
             RX_DOSE_ORDERED = as.character(med$dose),
             RX_DOSE_ORDERED_UNIT = med$unit,
+            RX_DOSE_FORM = sample(c("TAB", "CAP", "SOL", "INJ", "CRE", "OIN", "NI", "UN", "OT"), 1),
+            RX_FREQUENCY = frequency,
+            RX_ROUTE = route,
+            RX_BASIS = sample(c("01", "02", "NI", "UN", "OT"), 1),
+            RX_PRN_FLAG = sample(c("Y", "N"), 1, prob = c(0.2, 0.8)),
+            RX_DISPENSE_AS_WRITTEN = sample(c("Y", "N", "NI", "UN", "OT"), 1),
+            RX_SOURCE = sample(c("OD", "BI", "CL", "NI", "UN", "OT"), 1),
+            RXNORM_CUI = med$rxnorm,
+            RAW_RX_MED_NAME = med$name,
+            RAW_RX_FREQUENCY = frequency,
+            RAW_RX_DOSE_ORDERED = as.character(med$dose),
+            RAW_RX_DOSE_ORDERED_UNIT = med$unit,
+            RAW_RX_ROUTE = route,
+            RAW_RX_REFILLS = as.character(refills),
+            RAW_RXNORM_CUI = as.character(med$rxnorm),
+            RAW_RX_NDC = paste0(sample(10000:99999, 1), "-", sample(1000:9999, 1), "-", sample(10:99, 1)),
+            CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
             UID = i,
             stringsAsFactors = FALSE
           )

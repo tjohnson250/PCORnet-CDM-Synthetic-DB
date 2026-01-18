@@ -371,10 +371,8 @@ Imports data from [Synthea](https://github.com/synthetichealth/synthea), a reali
 -   **Realistic demographics**: Based on US Census data for age, gender, race, and geographic distribution
 
 Synthea mode produces the most clinically realistic data but requires:
-1. Java runtime to run Synthea
-2. Pre-generated Synthea CSV output
-
-See `synthea/README.md` for setup instructions.
+1. Java JDK 11 or newer to run Synthea
+2. Pre-generated Synthea CSV output (see `synthea/README.md` for setup instructions)
 
 ### Simulated Data Quality Issues
 

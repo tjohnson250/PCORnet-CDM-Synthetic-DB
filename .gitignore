@@ -39,8 +39,7 @@ wheels/
 .Rapp.history
 # Session Data
 .RData
-# Project files
-*.Rproj
+# Project files (keeping .Rproj for package development)
 # R packages
 .Rbuildignore
 # Invisible files created by R

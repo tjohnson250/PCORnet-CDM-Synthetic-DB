@@ -549,14 +549,37 @@ print.pcornet_summary <- function(x, ...) {
 
       # Vitals
       if (runif(1) < 0.9) {
+        ht <- round(rnorm(1, 170, 15), 1)
+        wt <- round(rnorm(1, 80, 20), 1)
+        systolic <- round(rnorm(1, 125, 15), 0)
+        diastolic <- round(rnorm(1, 80, 10), 0)
+        bp_position <- sample(c("01", "02", "03", "NI", "UN", "OT"), 1)
+        smoking <- sample(c("01", "02", "03", "04", "05", "06", "07", "08", "NI", "UN"), 1)
+        tobacco <- sample(c("01", "02", "03", "04", "06", "NI", "UN"), 1)
+        tobacco_type <- sample(c("01", "02", "03", "04", "05", "NI", "UN"), 1)
         vitals[[vital_id]] <- data.frame(
           VITALID = paste0("VIT", sprintf("%010d", vital_id)),
           PATID = patid,
           ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
-          HT = round(rnorm(1, 170, 15), 1),
-          WT = round(rnorm(1, 80, 20), 1),
-          SYSTOLIC = round(rnorm(1, 125, 15), 0),
-          DIASTOLIC = round(rnorm(1, 80, 10), 0),
+          MEASURE_DATE = admit_dates[j],
+          MEASURE_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
+          VITAL_SOURCE = sample(c("PR", "PD", "HC", "HD", "NI", "UN", "OT"), 1),
+          HT = ht,
+          WT = wt,
+          ORIGINAL_BMI = round(wt / ((ht / 100)^2), 2),
+          SYSTOLIC = systolic,
+          DIASTOLIC = diastolic,
+          BP_POSITION = bp_position,
+          SMOKING = smoking,
+          TOBACCO = tobacco,
+          TOBACCO_TYPE = tobacco_type,
+          RAW_SYSTOLIC = as.character(systolic),
+          RAW_DIASTOLIC = as.character(diastolic),
+          RAW_BP_POSITION = bp_position,
+          RAW_SMOKING = smoking,
+          RAW_TOBACCO = tobacco,
+          RAW_TOBACCO_TYPE = tobacco_type,
+          CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
           UID = i,
           stringsAsFactors = FALSE
         )
@@ -916,15 +939,33 @@ print.pcornet_summary <- function(x, ...) {
       # Profile-based vitals
       if (runif(1) < 0.9) {
         vital_data <- generate_profile_vitals(profile)
+        bp_position <- sample(c("01", "02", "03", "NI", "UN", "OT"), 1)
+        smoking <- sample(c("01", "02", "03", "04", "05", "06", "07", "08", "NI", "UN"), 1)
+        tobacco <- sample(c("01", "02", "03", "04", "06", "NI", "UN"), 1)
+        tobacco_type <- sample(c("01", "02", "03", "04", "05", "NI", "UN"), 1)
         all_vitals[[vital_id]] <- data.frame(
           VITALID = paste0("VIT", sprintf("%010d", vital_id)),
           PATID = patid,
           ENCOUNTERID = paste0("ENC", sprintf("%010d", enc_id)),
+          MEASURE_DATE = admit_dates[j],
+          MEASURE_TIME = sprintf("%02d:%02d", sample(0:23, 1), sample(0:59, 1)),
+          VITAL_SOURCE = sample(c("PR", "PD", "HC", "HD", "NI", "UN", "OT"), 1),
           HT = vital_data$ht,
           WT = vital_data$wt,
           ORIGINAL_BMI = vital_data$bmi,
           SYSTOLIC = vital_data$systolic,
           DIASTOLIC = vital_data$diastolic,
+          BP_POSITION = bp_position,
+          SMOKING = smoking,
+          TOBACCO = tobacco,
+          TOBACCO_TYPE = tobacco_type,
+          RAW_SYSTOLIC = as.character(vital_data$systolic),
+          RAW_DIASTOLIC = as.character(vital_data$diastolic),
+          RAW_BP_POSITION = bp_position,
+          RAW_SMOKING = smoking,
+          RAW_TOBACCO = tobacco,
+          RAW_TOBACCO_TYPE = tobacco_type,
+          CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
           UID = i,
           stringsAsFactors = FALSE
         )

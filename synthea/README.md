@@ -6,9 +6,9 @@ Synthea generates highly realistic synthetic patient data using disease state mo
 
 ## Prerequisites
 
-- **Java JDK 11 or 17** (LTS versions recommended)
+- **Java JDK 11 or newer** (JDK, not JRE)
 - At least 4GB RAM for moderate population sizes
-- R packages: DBI, duckdb, dplyr, lubridate
+- The `pcornet.synthetic` R package (includes all required dependencies)
 
 ### Check Java Installation
 

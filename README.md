@@ -340,7 +340,11 @@ export_to_csv(dbs, output_dir = "pcornet_export", include_mpi = FALSE)
 
 ### Clinical Profiles (Enhanced Mode)
 
-The enhanced mode assigns patients to clinical profiles:
+The enhanced mode assigns patients to clinical profiles that ensure clinically coherent data. Instead of randomly assigning diagnoses, labs, and medications, each patient receives a profile that determines their clinical data. This means:
+
+- Diabetic patients get diabetes diagnoses, HbA1c labs, and Metformin prescriptions
+- Cardiac patients get heart disease diagnoses, lipid panels, and statins
+- Lab values are appropriately abnormal for the condition
 
 | Profile       | Prevalence | Key Features                                |
 |---------------|------------|---------------------------------------------|
@@ -351,7 +355,52 @@ The enhanced mode assigns patients to clinical profiles:
 | Mental Health | 10%        | F32.x/F41.x diagnoses, SSRIs                |
 | Multi-morbid  | 15%        | Multiple chronic conditions                 |
 
-This creates clinically coherent data suitable for demos and visualization.
+Prevalence rates are adjusted by age (e.g., cardiac profiles are more common in older patients).
+
+#### Profile Structure
+
+Each profile defines:
+
+- **Diagnoses**: Primary (always assigned) and secondary (probability-based) ICD-10 codes
+- **Labs**: LOINC codes with normal/abnormal reference ranges appropriate to the condition
+- **Medications**: RxNorm codes with prescription probabilities
+- **Procedures**: CPT codes for condition-appropriate tests and treatments
+- **Vitals**: BMI and blood pressure parameters typical for the condition
+- **Encounter range**: Min/max encounters per patient
+
+#### Clinical Coherence Examples
+
+**Diabetic Patient:**
+- Diagnoses: E11.9 (Type 2 DM), I10 (Hypertension), E78.5 (Hyperlipidemia)
+- Labs: HbA1c (elevated), Glucose (elevated), Creatinine, GFR
+- Medications: Metformin, Lisinopril, Atorvastatin
+- Procedures: HbA1c test, Comprehensive metabolic panel
+
+**Cardiac Patient:**
+- Diagnoses: I25.10 (CAD), I10 (Hypertension), E78.5 (Hyperlipidemia)
+- Labs: Lipid panel, BNP, Troponin
+- Medications: Atorvastatin, Aspirin, Metoprolol, Lisinopril
+- Procedures: ECG, Echocardiogram, Lipid panel
+
+#### Customizing Profile Distribution
+
+Override the default prevalence using the `profile_weights` parameter:
+
+``` r
+dbs <- create_pcornet_database(
+  n_patients = 1000,
+  profile_weights = list(
+    healthy = 0.20,
+    diabetic = 0.40,  # More diabetic patients
+    cardiac = 0.15,
+    respiratory = 0.10,
+    mental_health = 0.10,
+    multimorbid = 0.05
+  )
+)
+```
+
+For full technical details on profile definitions, see `clinical_profiles/README.md`.
 
 ### Random Mode
 

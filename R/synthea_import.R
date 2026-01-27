@@ -165,10 +165,12 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
 
   cat("Creating ID mappings...\n")
 
+  # Use same PATID format for both uid and patid (they are equivalent in this schema)
+  patid_values <- paste0("PAT", sprintf("%07d", 1:nrow(patients)))
   patient_map <- data.frame(
     synthea_id = patients$Id,
-    uid = 1:nrow(patients),
-    patid = paste0("PAT", sprintf("%07d", 1:nrow(patients))),
+    uid = patid_values,
+    patid = patid_values,
     stringsAsFactors = FALSE
   )
 

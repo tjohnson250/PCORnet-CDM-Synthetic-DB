@@ -254,7 +254,8 @@ print.pcornet_summary <- function(x, ...) {
   con_cdw <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   con_mpi <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
-  uids <- 1:n_patients
+  # Use PATID format for UIDs to match production schema where UID = CDM_PATID
+  uids <- paste0("PAT", sprintf("%07d", 1:n_patients))
 
   # =========================================================================
   # MPI Database
@@ -290,7 +291,7 @@ print.pcornet_summary <- function(x, ...) {
   enterprise_ext <- data.frame(
     Uid = uids,
     MPIUpdateDTTM = .random_datetime(n_patients, as.Date("2020-01-01"), current_date),
-    CDM_PATID = paste0("PAT", sprintf("%07d", uids)),
+    CDM_PATID = uids,  # Now same as Uid
     EPIC_PAT_ID = .sample_with_na(paste0("EPIC", sprintf("%010d", sample(1:99999999, n_patients))),
                                   n_patients, prob_na = 0.2),
     ALLSCRIPTS_PERSON_ID = .sample_with_na(as.integer(sample(1:999999, n_patients)),
@@ -325,7 +326,7 @@ print.pcornet_summary <- function(x, ...) {
 
   dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
 
-  # MPI mappings
+  # MPI mappings - uids_in_system is now VARCHAR (PATID format)
   source_names <- names(sources)
   mpi_records <- list()
   for (src in source_names) {
@@ -356,7 +357,7 @@ print.pcornet_summary <- function(x, ...) {
   # =========================================================================
 
   demographic <- data.frame(
-    PATID = paste0("PAT", sprintf("%07d", uids)),
+    PATID = uids,  # Now same as Uid
     BIRTH_DATE = enterprise_records$DoB,
     BIRTH_TIME = .sample_with_na(sprintf("%02d:%02d", sample(0:23, n_patients, replace = TRUE),
                                          sample(0:59, n_patients, replace = TRUE)),
@@ -398,7 +399,7 @@ print.pcornet_summary <- function(x, ...) {
   death_records <- enterprise_ext %>%
     filter(IsDeceased == "Y") %>%
     transmute(
-      PATID = paste0("PAT", sprintf("%07d", Uid)),
+      PATID = Uid,  # Uid is now PATID format
       DEATH_DATE = as.Date(DeceasedDTTM),
       DEATH_DATE_IMPUTE = "N",
       DEATH_SOURCE = sample(c("L", "N", "S"), dplyr::n(), replace = TRUE),
@@ -448,7 +449,7 @@ print.pcornet_summary <- function(x, ...) {
   vital_id <- 1
 
   for (i in 1:n_patients) {
-    patid <- paste0("PAT", sprintf("%07d", i))
+    patid <- uids[i]  # Use PATID format from uids vector
     birth_date <- demographic$BIRTH_DATE[i]
     death_date <- if (i %in% deceased_idx) as.Date(enterprise_ext$DeceasedDTTM[i]) else current_date
 
@@ -485,7 +486,7 @@ print.pcornet_summary <- function(x, ...) {
         PAYER_TYPE_PRIMARY = payer_type,
         CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
         GPC_FLAG = "Y",
-        UID = i,
+        UID = patid,  # Now PATID format
         stringsAsFactors = FALSE
       )
 
@@ -515,7 +516,7 @@ print.pcornet_summary <- function(x, ...) {
           RAW_DX_SOURCE = dx_source,
           RAW_PDX = pdx_val,
           CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-          UID = i,
+          UID = patid,  # Now PATID format
           stringsAsFactors = FALSE
         )
         dx_id <- dx_id + 1
@@ -543,7 +544,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_PX_TYPE = "CPT",
             RAW_PX_NAME = paste0("Procedure ", px_code),
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,  # Now PATID format
             stringsAsFactors = FALSE
           )
           px_id <- px_id + 1
@@ -591,7 +592,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_RESULT = as.character(result_num),
             RAW_UNIT = lab_tests$UNIT[test_idx],
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,  # Now PATID format
             stringsAsFactors = FALSE
           )
           lab_id <- lab_id + 1
@@ -641,7 +642,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_RXNORM_CUI = as.character(medications$RXNORM[med_idx]),
             RAW_RX_NDC = paste0(sample(10000:99999, 1), "-", sample(1000:9999, 1), "-", sample(10:99, 1)),
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,  # Now PATID format
             stringsAsFactors = FALSE
           )
           rx_id <- rx_id + 1
@@ -681,7 +682,7 @@ print.pcornet_summary <- function(x, ...) {
           RAW_TOBACCO = tobacco,
           RAW_TOBACCO_TYPE = tobacco_type,
           CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-          UID = i,
+          UID = patid,  # Now PATID format
           stringsAsFactors = FALSE
         )
         vital_id <- vital_id + 1
@@ -780,7 +781,8 @@ print.pcornet_summary <- function(x, ...) {
   con_cdw <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   con_mpi <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
-  uids <- 1:n_patients
+  # Use PATID format for UIDs to match production schema where UID = CDM_PATID
+  uids <- paste0("PAT", sprintf("%07d", 1:n_patients))
 
   # =========================================================================
   # MPI Database (same as random)
@@ -816,7 +818,7 @@ print.pcornet_summary <- function(x, ...) {
   enterprise_ext <- data.frame(
     Uid = uids,
     MPIUpdateDTTM = .random_datetime(n_patients, as.Date("2020-01-01"), current_date),
-    CDM_PATID = paste0("PAT", sprintf("%07d", uids)),
+    CDM_PATID = uids,  # Now same as Uid
     EPIC_PAT_ID = .sample_with_na(paste0("EPIC", sprintf("%010d", sample(1:99999999, n_patients))),
                                   n_patients, prob_na = 0.2),
     ALLSCRIPTS_PERSON_ID = .sample_with_na(as.integer(sample(1:999999, n_patients)),
@@ -851,6 +853,7 @@ print.pcornet_summary <- function(x, ...) {
 
   dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
 
+  # MPI mappings - uids_in_system is now VARCHAR (PATID format)
   source_names <- names(sources)
   mpi_records <- list()
   for (src in source_names) {
@@ -903,7 +906,7 @@ print.pcornet_summary <- function(x, ...) {
   # =========================================================================
 
   demographic <- data.frame(
-    PATID = paste0("PAT", sprintf("%07d", uids)),
+    PATID = uids,  # Now same as Uid
     BIRTH_DATE = enterprise_records$DoB,
     BIRTH_TIME = .sample_with_na(sprintf("%02d:%02d", sample(0:23, n_patients, replace = TRUE),
                                          sample(0:59, n_patients, replace = TRUE)),
@@ -925,7 +928,7 @@ print.pcornet_summary <- function(x, ...) {
   death_records <- enterprise_ext %>%
     filter(IsDeceased == "Y") %>%
     transmute(
-      PATID = paste0("PAT", sprintf("%07d", Uid)),
+      PATID = Uid,  # Uid is now PATID format
       DEATH_DATE = as.Date(DeceasedDTTM),
       DEATH_DATE_IMPUTE = "N",
       DEATH_SOURCE = sample(c("L", "N", "S"), dplyr::n(), replace = TRUE),
@@ -952,7 +955,7 @@ print.pcornet_summary <- function(x, ...) {
   vital_id <- 1
 
   for (i in 1:n_patients) {
-    patid <- paste0("PAT", sprintf("%07d", i))
+    patid <- uids[i]  # Use PATID format from uids vector
     birth_date <- demographic$BIRTH_DATE[i]
     death_date <- if (i %in% deceased_idx) as.Date(enterprise_ext$DeceasedDTTM[i]) else current_date
     profile_name <- patient_data$clinical_profile[i]
@@ -992,7 +995,7 @@ print.pcornet_summary <- function(x, ...) {
         PAYER_TYPE_PRIMARY = payer_type,
         CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
         GPC_FLAG = "Y",
-        UID = i,
+        UID = patid,  # Now PATID format
         stringsAsFactors = FALSE
       )
 
@@ -1021,7 +1024,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_DX_SOURCE = dx_source,
             RAW_PDX = pdx_val,
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,
             stringsAsFactors = FALSE
           )
           dx_id <- dx_id + 1
@@ -1062,7 +1065,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_RESULT = as.character(lab_data$value[k]),
             RAW_UNIT = lab_data$unit[k],
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,
             stringsAsFactors = FALSE
           )
           lab_id <- lab_id + 1
@@ -1090,7 +1093,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_PX_TYPE = "CPT",
             RAW_PX_NAME = px_data$name[k],
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,
             stringsAsFactors = FALSE
           )
           px_id <- px_id + 1
@@ -1127,7 +1130,7 @@ print.pcornet_summary <- function(x, ...) {
           RAW_TOBACCO = tobacco,
           RAW_TOBACCO_TYPE = tobacco_type,
           CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-          UID = i,
+          UID = patid,
           stringsAsFactors = FALSE
         )
         vital_id <- vital_id + 1
@@ -1175,7 +1178,7 @@ print.pcornet_summary <- function(x, ...) {
             RAW_RXNORM_CUI = as.character(med$rxnorm),
             RAW_RX_NDC = paste0(sample(10000:99999, 1), "-", sample(1000:9999, 1), "-", sample(10:99, 1)),
             CDW_Source = sample(c("EPIC", "ALLSCRIPTS"), 1),
-            UID = i,
+            UID = patid,
             stringsAsFactors = FALSE
           )
           rx_id <- rx_id + 1

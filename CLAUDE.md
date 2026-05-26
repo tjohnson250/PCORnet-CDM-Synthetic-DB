@@ -6,9 +6,8 @@ with code in this repository.
 ## Project Overview
 
 This repository contains a synthetic data generator for PCORnet Common
-Data Model (CDM) and Master Patient Index (MPI) databases. It creates
-in-memory DuckDB databases populated with realistic test data for
-healthcare research and development.
+Data Model (CDM) and Master Patient Index (MPI) databases. It generates
+data in R and writes directly to Microsoft SQL Server databases.
 
 ## Running the Code
 
@@ -17,46 +16,65 @@ healthcare research and development.
 source("R/pcornet.R")
 
 # Generate databases (default: 100 patients with clinical profiles)
-dbs <- create_pcornet_database()
+dbs <- create_pcornet_database(
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
+
+# Or with Windows authentication
+dbs <- create_pcornet_database(
+  server = "localhost",
+  trusted_connection = TRUE
+)
 
 # Access the connections
-dbs$cdw  # Clinical Data Warehouse
-dbs$mpi  # Master Patient Index
+dbs$cdw  # Clinical Data Warehouse (SQL Server connection)
+dbs$mpi  # Master Patient Index (SQL Server connection)
 ```
 
 ## Function API
 
 ### Main Functions
 
-- `create_pcornet_database(n_patients, mode, current_date, seed, save_to_disk, output_dir, synthea_dir, profile_weights)` - Generate synthetic databases
-- `load_pcornet_database(cdw_path, mpi_path)` - Load existing databases from disk
+- `create_pcornet_database(n_patients, mode, server, cdw_database, mpi_database, uid, pwd, ...)` - Generate synthetic data and write to SQL Server
+- `load_pcornet_database(server, cdw_database, mpi_database, uid, pwd, ...)` - Connect to existing SQL Server databases
 - `get_database_summary(con_cdw, con_mpi)` - Get table row counts
 
 ### Generation Modes
 
 ``` r
 # Enhanced mode (default) - Clinically coherent profiles
-dbs <- create_pcornet_database(n_patients = 500)
+dbs <- create_pcornet_database(n_patients = 500, server = "localhost", uid = "sa", pwd = "pw")
 
 # Random mode - No clinical logic
-dbs <- create_pcornet_database(n_patients = 500, mode = "random")
+dbs <- create_pcornet_database(n_patients = 500, mode = "random", server = "localhost", uid = "sa", pwd = "pw")
 
 # Synthea mode - Import from Synthea CSV
-dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv")
+dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv", server = "localhost", uid = "sa", pwd = "pw")
 ```
+
+### SQL Server Connection Options
+
+- `server`, `uid`, `pwd` - Basic SQL Server authentication
+- `trusted_connection = TRUE` - Windows integrated authentication
+- `connection_string` / `mpi_connection_string` - Full ODBC connection strings
+- `driver` - ODBC driver name (default: "ODBC Driver 17 for SQL Server")
+- `cdw_database` / `mpi_database` - Database names (default: "PCORnet_CDW" / "MPI")
+- `overwrite` - Whether to overwrite existing tables (default: TRUE)
+- `batch_size` - Rows per batch for large table writes (default: 10000)
 
 ## Architecture
 
 ### Two-Database Structure
 
-**MPI Database** - Master Patient Index for patient identity
-management:
+**MPI Database** (`mpi_database`, default "MPI") - Master Patient Index for patient identity management:
 - `EnterpriseRecords`: Core patient demographics (Uid, name, DoB, SSN, address, phone)
 - `EnterpriseRecords_Ext`: Extended demographics and system identifiers
 - `Mpi`: Cross-reference mapping between source systems and unified patient identifiers
 - `MPI_Src`: Source system definitions
 
-**CDW Database** - PCORnet Common Data Model clinical tables:
+**CDW Database** (`cdw_database`, default "PCORnet_CDW") - PCORnet Common Data Model clinical tables:
 - `DEMOGRAPHIC`: Patient demographics linked to MPI via UID
 - `DEATH`: Death records for deceased patients
 - `ENCOUNTER`: Patient encounters (IP, ED, AV, OA, IS types)
@@ -119,16 +137,14 @@ dbListTables(dbs$mpi)
 dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")
 dbGetQuery(dbs$mpi, "SELECT COUNT(*) FROM Mpi")
 
-# Join data across databases - Option 1: Using ATTACH
-dbExecute(dbs$cdw, "ATTACH 'mpi.duckdb' AS mpi")
+# Join data across databases using fully qualified names
 dbGetQuery(dbs$cdw, "
-  SELECT d.PATID, e.First, e.Last, d.BIRTH_DATE
+  SELECT d.PATID, d.BIRTH_DATE, d.SEX
   FROM DEMOGRAPHIC d
-  JOIN mpi.EnterpriseRecords e ON d.UID = e.Uid
-  LIMIT 10
+  WHERE d.isDeceased = 'N'
 ")
 
-# Join data across databases - Option 2: Using dplyr in R
+# Join data across databases using dplyr in R
 library(dplyr)
 demographic <- dbReadTable(dbs$cdw, "DEMOGRAPHIC")
 enterprise <- dbReadTable(dbs$mpi, "EnterpriseRecords")
@@ -139,4 +155,15 @@ inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
 
 ## Dependencies
 
-Required R packages: - DBI - duckdb - dplyr - lubridate
+Required R packages:
+- DBI
+- odbc
+- dplyr
+- lubridate
+
+### SQL Server ODBC Driver
+
+Install the Microsoft ODBC Driver for SQL Server:
+- **Windows**: Download from Microsoft
+- **Mac**: `brew install microsoft/mssql-release/msodbcsql17`
+- **Linux**: See Microsoft documentation for your distribution

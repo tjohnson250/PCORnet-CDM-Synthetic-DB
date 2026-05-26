@@ -1,14 +1,12 @@
 # Tests for Synthea import functionality
 
 test_that("synthea mode imports patients correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   expect_type(dbs, "list")
   expect_named(dbs, c("cdw", "mpi", "summary"))
@@ -23,14 +21,12 @@ test_that("synthea mode imports patients correctly", {
 })
 
 test_that("synthea mode imports patient demographics correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Check specific patient data
   john <- DBI::dbGetQuery(dbs$cdw, "SELECT * FROM DEMOGRAPHIC WHERE firstName = 'John'")
@@ -45,14 +41,12 @@ test_that("synthea mode imports patient demographics correctly", {
 })
 
 test_that("synthea mode creates death records for deceased patients", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Only patient-002 (Jane) is deceased
   death_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM DEATH")[[1]]
@@ -63,14 +57,12 @@ test_that("synthea mode creates death records for deceased patients", {
 })
 
 test_that("synthea mode imports encounters correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Should have 5 encounters
   enc_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM ENCOUNTER")[[1]]
@@ -84,14 +76,12 @@ test_that("synthea mode imports encounters correctly", {
 })
 
 test_that("synthea mode imports diagnoses correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Should have 5 diagnoses
   dx_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM DIAGNOSIS")[[1]]
@@ -105,14 +95,12 @@ test_that("synthea mode imports diagnoses correctly", {
 })
 
 test_that("synthea mode imports medications correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Should have 3 medications
   rx_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM PRESCRIBING")[[1]]
@@ -125,14 +113,12 @@ test_that("synthea mode imports medications correctly", {
 })
 
 test_that("synthea mode imports procedures correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Should have 3 procedures
   px_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM PROCEDURES")[[1]]
@@ -140,14 +126,12 @@ test_that("synthea mode imports procedures correctly", {
 })
 
 test_that("synthea mode imports labs and vitals correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Should have 1 lab (HbA1c - non-vital observation)
   lab_count <- DBI::dbGetQuery(dbs$cdw, "SELECT COUNT(*) FROM LAB_RESULT_CM")[[1]]
@@ -164,14 +148,12 @@ test_that("synthea mode imports labs and vitals correctly", {
 })
 
 test_that("synthea mode creates MPI cross-reference correctly", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Check MPI table
   mpi <- DBI::dbGetQuery(dbs$mpi, "SELECT * FROM Mpi")
@@ -185,14 +167,12 @@ test_that("synthea mode creates MPI cross-reference correctly", {
 })
 
 test_that("synthea mode links CDW and MPI via UID", {
+  skip_if_no_sql_server()
   synthea_dir <- testthat::test_path("fixtures", "synthea")
   skip_if_not(dir.exists(synthea_dir), "Synthea fixtures not found")
 
-  dbs <- create_pcornet_database(
-    mode = "synthea",
-    synthea_dir = synthea_dir,
-    save_to_disk = FALSE
-  )
+  dbs <- create_test_db(mode = "synthea", synthea_dir = synthea_dir)
+  on.exit(cleanup_test_db(dbs))
 
   # Get UIDs from both databases
   cdw_uids <- DBI::dbGetQuery(dbs$cdw, "SELECT DISTINCT UID FROM DEMOGRAPHIC ORDER BY UID")[[1]]

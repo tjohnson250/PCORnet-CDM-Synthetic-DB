@@ -1,5 +1,5 @@
 # Synthea to PCORnet CDM Transformation Functions
-# Converts Synthea CSV output to PCORnet CDM format in DuckDB
+# Converts Synthea CSV output to PCORnet CDM format in SQL Server
 
 #' Load encounter type mappings
 #' @keywords internal
@@ -81,14 +81,15 @@ if (map_file == "") {
 
 #' Load and transform Synthea data to PCORnet CDM format
 #'
-#' Imports Synthea CSV output and converts it to PCORnet CDM format in DuckDB
-#' databases. This provides the most clinically realistic synthetic data as
-#' Synthea uses disease state models informed by CDC, NIH, and clinical research.
+#' Imports Synthea CSV output and converts it to PCORnet CDM format, writing
+#' directly to SQL Server databases.
 #'
 #' @param synthea_dir Path to Synthea output/csv directory containing patients.csv
 #'   and other Synthea output files (encounters.csv, conditions.csv, etc.)
-#' @param save_to_disk Whether to save databases to disk files (default: TRUE)
-#' @param output_dir Directory for output files (default: ".")
+#' @param con_cdw DBI connection to CDW SQL Server database
+#' @param con_mpi DBI connection to MPI SQL Server database
+#' @param overwrite If TRUE, overwrite existing tables (default: TRUE)
+#' @param batch_size Number of rows to write at a time (default: 10000)
 #' @return List with `$cdw` (CDW connection) and `$mpi` (MPI connection)
 #'
 #' @examples
@@ -96,13 +97,20 @@ if (map_file == "") {
 #' # Generate data with Synthea first:
 #' # java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true
 #'
-#' # Then import into PCORnet format
-#' dbs <- load_synthea_data("~/synthea/output/csv")
+#' # Then import into PCORnet format via create_pcornet_database
+#' dbs <- create_pcornet_database(
+#'   mode = "synthea",
+#'   synthea_dir = "~/synthea/output/csv",
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
+#' )
 #' DBI::dbListTables(dbs$cdw)
 #' }
 #'
 #' @export
-load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = ".") {
+load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
+                              overwrite = TRUE, batch_size = 10000) {
 
   cat("Loading Synthea data from:", synthea_dir, "\n")
 
@@ -114,10 +122,6 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   # Load mapping tables
   enc_map <- .load_encounter_type_map()
   snomed_map <- .load_snomed_icd10_map()
-
-  # Create databases
-  con_cdw <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  con_mpi <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
   CURRENT_DATETIME <- Sys.time()
 
@@ -213,7 +217,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   enterprise_records$FirstSdx <- substr(enterprise_records$First, 1, 4)
   enterprise_records$LastSdx <- substr(enterprise_records$Last, 1, 4)
 
-  DBI::dbWriteTable(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
 
   # EnterpriseRecords_Ext
   is_deceased <- !is.na(patients$DEATHDATE) & patients$DEATHDATE != ""
@@ -242,7 +246,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     stringsAsFactors = FALSE
   )
 
-  DBI::dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
 
   # Mpi mapping table
   mpi <- data.frame(
@@ -252,7 +256,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     Organization = "SYNTHEA",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
+  .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
 
   # MPI_Src
   mpi_src <- data.frame(
@@ -261,7 +265,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     Description = "Synthea Synthetic Patient Generator",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)
+  .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
 
   cat("  MPI database created\n")
 
@@ -298,7 +302,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     stringsAsFactors = FALSE
   )
 
-  DBI::dbWriteTable(con_cdw, "DEMOGRAPHIC", demographic, overwrite = TRUE)
+  .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
   cat("  DEMOGRAPHIC:", nrow(demographic), "records\n")
 
   # ============================================================================
@@ -320,7 +324,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       MPI_SRC = NA,
       stringsAsFactors = FALSE
     )
-    DBI::dbWriteTable(con_cdw, "DEATH", death_records, overwrite = TRUE)
+    .write_table_batched(con_cdw, "DEATH", death_records, overwrite = overwrite, batch_size = batch_size)
     cat("  DEATH:", nrow(death_records), "records\n")
   }
 
@@ -363,7 +367,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "ENCOUNTER", encounter_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "ENCOUNTER", encounter_df, overwrite = overwrite, batch_size = batch_size)
     cat("  ENCOUNTER:", nrow(encounter_df), "records\n")
   }
 
@@ -405,7 +409,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = overwrite, batch_size = batch_size)
     cat("  DIAGNOSIS:", nrow(diagnosis_df), "records\n")
   }
 
@@ -455,7 +459,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "PRESCRIBING", prescribing_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "PRESCRIBING", prescribing_df, overwrite = overwrite, batch_size = batch_size)
     cat("  PRESCRIBING:", nrow(prescribing_df), "records\n")
   }
 
@@ -494,7 +498,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "PROCEDURES", procedures_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "PROCEDURES", procedures_df, overwrite = overwrite, batch_size = batch_size)
     cat("  PROCEDURES:", nrow(procedures_df), "records\n")
   }
 
@@ -550,7 +554,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
         stringsAsFactors = FALSE
       )
 
-      DBI::dbWriteTable(con_cdw, "LAB_RESULT_CM", lab_df, overwrite = TRUE)
+      .write_table_batched(con_cdw, "LAB_RESULT_CM", lab_df, overwrite = overwrite, batch_size = batch_size)
       cat("  LAB_RESULT_CM:", nrow(lab_df), "records\n")
     }
 
@@ -596,7 +600,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
         stringsAsFactors = FALSE
       )
 
-      DBI::dbWriteTable(con_cdw, "VITAL", vital_df, overwrite = TRUE)
+      .write_table_batched(con_cdw, "VITAL", vital_df, overwrite = overwrite, batch_size = batch_size)
       cat("  VITAL:", nrow(vital_df), "records\n")
     }
   }
@@ -615,10 +619,10 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     GPC_FLAG = "Y",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_cdw, "PROVIDER", providers, overwrite = TRUE)
+  .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
 
   # ============================================================================
-  # Summary and Save
+  # Summary
   # ============================================================================
 
   cat("\n=== Synthea to PCORnet Conversion Complete ===\n")
@@ -628,28 +632,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     cat(sprintf("  %s: %d records\n", tbl, count))
   }
 
-  if (save_to_disk) {
-    cat("\nSaving databases to disk...\n")
-    cdw_path <- file.path(output_dir, "pcornet_cdw.duckdb")
-    mpi_path <- file.path(output_dir, "mpi.duckdb")
-
-    con_cdw_disk <- DBI::dbConnect(duckdb::duckdb(), dbdir = cdw_path)
-    con_mpi_disk <- DBI::dbConnect(duckdb::duckdb(), dbdir = mpi_path)
-
-    for (table in DBI::dbListTables(con_cdw)) {
-      DBI::dbWriteTable(con_cdw_disk, table, DBI::dbReadTable(con_cdw, table), overwrite = TRUE)
-    }
-    for (table in DBI::dbListTables(con_mpi)) {
-      DBI::dbWriteTable(con_mpi_disk, table, DBI::dbReadTable(con_mpi, table), overwrite = TRUE)
-    }
-
-    DBI::dbDisconnect(con_cdw_disk, shutdown = TRUE)
-    DBI::dbDisconnect(con_mpi_disk, shutdown = TRUE)
-
-    cat("Databases saved to:\n")
-    cat("  ", cdw_path, "\n")
-    cat("  ", mpi_path, "\n")
-  }
+  cat("\nData written to SQL Server.\n")
 
   list(cdw = con_cdw, mpi = con_mpi)
 }

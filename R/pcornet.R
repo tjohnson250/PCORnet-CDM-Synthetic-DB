@@ -35,7 +35,7 @@ DEFAULT_SOURCES <- list(
 #' @param mpi_database Database name for the Master Patient Index (default: "MPI")
 #' @param uid Username for SQL Server authentication
 #' @param pwd Password for SQL Server authentication
-#' @param driver ODBC driver name (default: "ODBC Driver 17 for SQL Server")
+#' @param driver ODBC driver name (default: "ODBC Driver 18 for SQL Server")
 #' @param port SQL Server port (default: 1433)
 #' @param schema Target schema for tables (default: "dbo")
 #' @param trusted_connection Use Windows integrated authentication instead of uid/pwd
@@ -111,7 +111,7 @@ create_pcornet_database <- function(
     mpi_database = "MPI",
     uid = NULL,
     pwd = NULL,
-    driver = "ODBC Driver 17 for SQL Server",
+    driver = "ODBC Driver 18 for SQL Server",
     port = 1433,
     schema = "dbo",
     trusted_connection = FALSE,
@@ -188,7 +188,7 @@ create_pcornet_database <- function(
 #' @param mpi_database Database name for the Master Patient Index (default: "MPI")
 #' @param uid Username for SQL Server authentication
 #' @param pwd Password for SQL Server authentication
-#' @param driver ODBC driver name (default: "ODBC Driver 17 for SQL Server")
+#' @param driver ODBC driver name (default: "ODBC Driver 18 for SQL Server")
 #' @param port SQL Server port (default: 1433)
 #' @param trusted_connection Use Windows integrated authentication (default: FALSE)
 #' @param connection_string Optional full ODBC connection string for CDW database
@@ -213,7 +213,7 @@ load_pcornet_database <- function(
     mpi_database = "MPI",
     uid = NULL,
     pwd = NULL,
-    driver = "ODBC Driver 17 for SQL Server",
+    driver = "ODBC Driver 18 for SQL Server",
     port = 1433,
     trusted_connection = FALSE,
     connection_string = NULL,
@@ -299,7 +299,7 @@ print.pcornet_summary <- function(x, ...) {
 # =============================================================================
 
 .connect_sql_server <- function(server, database, uid = NULL, pwd = NULL,
-                                driver = "ODBC Driver 17 for SQL Server",
+                                driver = "ODBC Driver 18 for SQL Server",
                                 port = 1433, trusted_connection = FALSE,
                                 connection_string = NULL) {
   if (is.null(connection_string)) {
@@ -308,12 +308,12 @@ print.pcornet_summary <- function(x, ...) {
     }
     if (trusted_connection) {
       connection_string <- sprintf(
-        "Driver={%s};Server=%s,%d;Database=%s;Trusted_Connection=yes;",
+        "Driver={%s};Server=%s,%d;Database=%s;Trusted_Connection=yes;TrustServerCertificate=yes;",
         driver, server, port, database
       )
     } else {
       connection_string <- sprintf(
-        "Driver={%s};Server=%s,%d;Database=%s;Uid=%s;Pwd=%s;",
+        "Driver={%s};Server=%s,%d;Database=%s;Uid=%s;Pwd=%s;TrustServerCertificate=yes;",
         driver, server, port, database, uid, pwd
       )
     }
@@ -331,16 +331,19 @@ print.pcornet_summary <- function(x, ...) {
   n_rows <- nrow(data)
   if (n_rows == 0) return(invisible(NULL))
 
+  table_id <- DBI::Id(schema = "dbo", table = table_name)
+
+  if (overwrite) {
+    tryCatch(DBI::dbRemoveTable(con, table_id), error = function(e) NULL)
+  }
+
   if (n_rows <= batch_size) {
-    DBI::dbWriteTable(con, table_name, data, overwrite = overwrite)
+    DBI::dbWriteTable(con, table_id, data, overwrite = FALSE, append = FALSE)
   } else {
-    if (overwrite && DBI::dbExistsTable(con, table_name)) {
-      DBI::dbRemoveTable(con, table_name)
-    }
-    DBI::dbWriteTable(con, table_name, data[1:batch_size, ], overwrite = FALSE)
+    DBI::dbWriteTable(con, table_id, data[1:batch_size, ], overwrite = FALSE, append = FALSE)
     for (i in seq(batch_size + 1, n_rows, by = batch_size)) {
       end_row <- min(i + batch_size - 1, n_rows)
-      DBI::dbAppendTable(con, table_name, data[i:end_row, ])
+      DBI::dbAppendTable(con, table_id, data[i:end_row, ])
     }
   }
 }

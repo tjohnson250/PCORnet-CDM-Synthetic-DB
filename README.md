@@ -148,7 +148,7 @@ Main function to generate synthetic PCORnet databases.
 | `mpi_database` | "MPI" | MPI database name |
 | `uid` | NULL | SQL Server username |
 | `pwd` | NULL | SQL Server password |
-| `driver` | "ODBC Driver 17 for SQL Server" | ODBC driver name |
+| `driver` | "ODBC Driver 18 for SQL Server" | ODBC driver name |
 | `port` | 1433 | SQL Server port |
 | `schema` | "dbo" | Target schema |
 | `trusted_connection` | FALSE | Use Windows integrated auth |
@@ -173,7 +173,7 @@ Connect to existing PCORnet databases on SQL Server.
 | `mpi_database` | "MPI" | MPI database name |
 | `uid` | NULL | SQL Server username |
 | `pwd` | NULL | SQL Server password |
-| `driver` | "ODBC Driver 17 for SQL Server" | ODBC driver name |
+| `driver` | "ODBC Driver 18 for SQL Server" | ODBC driver name |
 | `port` | 1433 | SQL Server port |
 | `trusted_connection` | FALSE | Use Windows integrated auth |
 | `connection_string` | NULL | Full ODBC connection string for CDW |

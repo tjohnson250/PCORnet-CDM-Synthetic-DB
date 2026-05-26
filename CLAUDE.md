@@ -59,7 +59,7 @@ dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv", se
 - `server`, `uid`, `pwd` - Basic SQL Server authentication
 - `trusted_connection = TRUE` - Windows integrated authentication
 - `connection_string` / `mpi_connection_string` - Full ODBC connection strings
-- `driver` - ODBC driver name (default: "ODBC Driver 17 for SQL Server")
+- `driver` - ODBC driver name (default: "ODBC Driver 18 for SQL Server")
 - `cdw_database` / `mpi_database` - Database names (default: "PCORnet_CDW" / "MPI")
 - `overwrite` - Whether to overwrite existing tables (default: TRUE)
 - `batch_size` - Rows per batch for large table writes (default: 10000)

@@ -163,6 +163,13 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     error = function(e) { cat("  Warning: observations.csv not found\n"); data.frame() }
   )
 
+  # claims.csv is the billing-context source for DIAGNOSIS. Problem-list
+  # entries come from conditions.csv and land in CONDITION instead.
+  claims <- tryCatch(
+    read.csv(file.path(synthea_dir, "claims.csv"), stringsAsFactors = FALSE),
+    error = function(e) { cat("  Warning: claims.csv not found\n"); data.frame() }
+  )
+
   # ============================================================================
   # Create ID mappings (Synthea UUID -> PCORnet format)
   # ============================================================================
@@ -372,45 +379,123 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   }
 
   # ============================================================================
-  # CDW Database - DIAGNOSIS
+  # CDW Database - CONDITION  (problem list, from conditions.csv)
   # ============================================================================
+  # PCORnet CDM v7.0, CONDITION guidance: "These records should NOT be
+  # duplicated in the DIAGNOSIS table." Synthea's conditions.csv is problem-list
+  # shaped (SNOMED-coded, with onset/abatement via START/STOP), so it maps here
+  # at full fidelity - CONDITION_TYPE = 'SM' is a first-class value, so no
+  # terminology crosswalk is required.
 
   if (nrow(conditions) > 0) {
-    conditions$PATID <- patient_map$patid[match(conditions$PATIENT, patient_map$synthea_id)]
-    conditions$UID <- patient_map$uid[match(conditions$PATIENT, patient_map$synthea_id)]
-    conditions$ENCOUNTERID <- encounter_map$encounterid[match(conditions$ENCOUNTER, encounter_map$synthea_id)]
+    cond_patid <- patient_map$patid[match(conditions$PATIENT, patient_map$synthea_id)]
+    cond_uid   <- patient_map$uid[match(conditions$PATIENT, patient_map$synthea_id)]
+    cond_encid <- encounter_map$encounterid[match(conditions$ENCOUNTER, encounter_map$synthea_id)]
 
-    # Map SNOMED to ICD-10
-    conditions$ICD10 <- .map_snomed_to_icd10(conditions$CODE, snomed_map)
+    cond_stop <- if ("STOP" %in% names(conditions)) trimws(as.character(conditions$STOP)) else ""
+    has_stop  <- !is.na(cond_stop) & nzchar(cond_stop)
 
-    diagnosis_df <- data.frame(
-      DIAGNOSISID = paste0("DX", sprintf("%010d", 1:nrow(conditions))),
-      PATID = conditions$PATID,
-      ENCOUNTERID = conditions$ENCOUNTERID,
-      ADMIT_DATE = as.Date(substr(conditions$START, 1, 10)),
-      DX = ifelse(!is.na(conditions$ICD10), conditions$ICD10, paste0("SNOMED:", conditions$CODE)),
-      DX_DATE = as.Date(substr(conditions$START, 1, 10)),
-      DX_TYPE = ifelse(!is.na(conditions$ICD10), "10", "SM"),
-      DX_SOURCE = "AD",
-      DX_ORIGIN = "OD",
-      DX_POA = NA_character_,
-      ENC_TYPE = NA_character_,
-      PDX = "P",
-      RAW_DX = conditions$DESCRIPTION,
-      RAW_DX_TYPE = "SNOMED-CT",
-      RAW_DX_SOURCE = "Synthea",
-      RAW_PDX = NA_character_,
-      PROVIDERID = NA_character_,
-      CDW_Source = "SYNTHEA",
+    cond_system <- if ("SYSTEM" %in% names(conditions)) {
+      as.character(conditions$SYSTEM)
+    } else {
+      "http://snomed.info/sct"
+    }
+
+    condition_df <- data.frame(
+      CONDITIONID  = paste0("COND", sprintf("%010d", seq_len(nrow(conditions)))),
+      PATID        = cond_patid,
+      ENCOUNTERID  = cond_encid,
+      REPORT_DATE  = as.Date(substr(conditions$START, 1, 10)),
+      RESOLVE_DATE = as.Date(ifelse(has_stop, substr(cond_stop, 1, 10), NA_character_)),
+      # Spec: ONSET_DATE "should only be provided where it exists in the source
+      # data. It is not calculated." Synthea's START is a recording date - 78.7%
+      # of rows share the date of their linked encounter - so it maps to
+      # REPORT_DATE. Deriving ONSET_DATE from it would fabricate the concept.
+      ONSET_DATE   = as.Date(NA),
+      CONDITION_STATUS = ifelse(has_stop, "RS", "AC"),
+      # Bare SNOMED code. The field is Text(18) and the longest observed code is
+      # 17 chars, so a "SNOMED:" prefix would overflow it.
+      CONDITION        = as.character(conditions$CODE),
+      CONDITION_TYPE   = "SM",
+      CONDITION_SOURCE = "HC",
+      RAW_CONDITION_STATUS = NA_character_,
+      RAW_CONDITION        = conditions$DESCRIPTION,
+      RAW_CONDITION_TYPE   = cond_system,
+      RAW_CONDITION_SOURCE = "Synthea conditions.csv",
+      CDW_Source      = "SYNTHEA",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
-      GPC_FLAG = "Y",
-      UID = conditions$UID,
-      SNOMED_CODE = conditions$CODE,
+      GPC_FLAG        = "Y",
+      UID             = cond_uid,
       stringsAsFactors = FALSE
     )
 
-    .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = overwrite, batch_size = batch_size)
-    cat("  DIAGNOSIS:", nrow(diagnosis_df), "records\n")
+    .write_table_batched(con_cdw, "CONDITION", condition_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  CONDITION:", nrow(condition_df), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - DIAGNOSIS  (billing context, from claims.csv)
+  # ============================================================================
+  # PCORnet CDM v7.0, DIAGNOSIS guidance: this table captures diagnoses "with
+  # the exception of problem list entries... Diagnoses from problem lists will
+  # be captured in the CONDITION table." Synthea's claims.csv is the billing
+  # source: each claim carries up to 8 diagnosis references, where DIAGNOSIS1 is
+  # principal and DIAGNOSIS2-8 are secondary, which yields a real PDX value.
+
+  if (nrow(claims) > 0) {
+    dx_cols <- intersect(paste0("DIAGNOSIS", 1:8), names(claims))
+
+    # Pivot the DIAGNOSIS1..8 columns to one row per diagnosis, keeping the
+    # column position so principal vs secondary can be derived.
+    dx_long <- do.call(rbind, lapply(seq_along(dx_cols), function(i) {
+      v <- trimws(as.character(claims[[dx_cols[i]]]))
+      keep <- !is.na(v) & nzchar(v)
+      if (!any(keep)) return(NULL)
+      data.frame(
+        PATIENT   = claims$PATIENTID[keep],
+        ENCOUNTER = claims$APPOINTMENTID[keep],
+        SVCDATE   = claims$SERVICEDATE[keep],
+        CODE      = v[keep],
+        SEQ       = i,
+        stringsAsFactors = FALSE
+      )
+    }))
+
+    if (!is.null(dx_long) && nrow(dx_long) > 0) {
+      dx_icd10 <- .map_snomed_to_icd10(dx_long$CODE, snomed_map)
+      dx_mapped <- !is.na(dx_icd10)
+      dx_date <- as.Date(substr(dx_long$SVCDATE, 1, 10))
+
+      diagnosis_df <- data.frame(
+        DIAGNOSISID = paste0("DX", sprintf("%010d", seq_len(nrow(dx_long)))),
+        PATID       = patient_map$patid[match(dx_long$PATIENT, patient_map$synthea_id)],
+        ENCOUNTERID = encounter_map$encounterid[match(dx_long$ENCOUNTER, encounter_map$synthea_id)],
+        ADMIT_DATE  = dx_date,
+        # Bare code, never prefixed - DX is a fixed-width coded field.
+        DX          = ifelse(dx_mapped, dx_icd10, dx_long$CODE),
+        DX_DATE     = dx_date,
+        DX_TYPE     = ifelse(dx_mapped, "10", "SM"),
+        DX_SOURCE   = "FI",   # spec: ambulatory encounters expected to be Final
+        DX_ORIGIN   = "BI",   # provider-side billing, not payer claim fulfillment
+        DX_POA      = "NI",   # Synthea models no present-on-admission data
+        ENC_TYPE    = NA_character_,
+        PDX         = ifelse(dx_long$SEQ == 1, "P", "S"),
+        RAW_DX        = dx_long$CODE,
+        RAW_DX_TYPE   = "SNOMED-CT",
+        RAW_DX_SOURCE = "Synthea claims.csv",
+        RAW_PDX       = as.character(dx_long$SEQ),
+        PROVIDERID    = NA_character_,
+        CDW_Source      = "SYNTHEA",
+        CDW_UpdatedDTTM = CURRENT_DATETIME,
+        GPC_FLAG        = "Y",
+        UID         = patient_map$uid[match(dx_long$PATIENT, patient_map$synthea_id)],
+        SNOMED_CODE = dx_long$CODE,
+        stringsAsFactors = FALSE
+      )
+
+      .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = overwrite, batch_size = batch_size)
+      cat("  DIAGNOSIS:", nrow(diagnosis_df), "records\n")
+    }
   }
 
   # ============================================================================

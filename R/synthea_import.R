@@ -627,8 +627,14 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
 
   cat("\n=== Synthea to PCORnet Conversion Complete ===\n")
   cat("CDW Tables:\n")
-  for (tbl in DBI::dbListTables(con_cdw)) {
-    count <- DBI::dbGetQuery(con_cdw, paste("SELECT COUNT(*) FROM", tbl))[[1]]
+  # dbListTables() also returns system objects outside dbo, which are not
+  # queryable unqualified. Restrict to user tables in the dbo schema.
+  user_tables <- DBI::dbGetQuery(con_cdw, paste(
+    "SELECT t.name FROM sys.tables t",
+    "JOIN sys.schemas s ON s.schema_id = t.schema_id",
+    "WHERE s.name = 'dbo' ORDER BY t.name"))$name
+  for (tbl in user_tables) {
+    count <- DBI::dbGetQuery(con_cdw, sprintf("SELECT COUNT(*) FROM dbo.[%s]", tbl))[[1]]
     cat(sprintf("  %s: %d records\n", tbl, count))
   }
 

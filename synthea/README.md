@@ -97,11 +97,13 @@ The converter uses these Synthea CSV files:
 |------|----------------|
 | `patients.csv` | DEMOGRAPHIC, EnterpriseRecords |
 | `encounters.csv` | ENCOUNTER |
-| `conditions.csv` | DIAGNOSIS, CONDITION |
+| `conditions.csv` | CONDITION |
+| `claims.csv` | DIAGNOSIS |
 | `medications.csv` | PRESCRIBING |
 | `procedures.csv` | PROCEDURES |
 | `observations.csv` | LAB_RESULT_CM, VITAL, OBS_CLIN |
 | `immunizations.csv` | IMMUNIZATION |
+| `payer_transitions.csv` + `payers.csv` | ENROLLMENT |
 
 ### How observations are routed
 
@@ -124,6 +126,21 @@ column for it, so it exists only in `OBS_CLIN`.
 Numeric-typed values go to `OBSCLIN_RESULT_NUM` with their units; text-typed
 values go to `OBSCLIN_RESULT_TEXT`. Survey responses get
 `OBSCLIN_SOURCE = 'PR'` (patient-reported), everything else `'HC'`.
+
+### How enrollment is derived
+
+`payer_transitions.csv` records one span per payer per year, so a patient on the
+same plan for a decade produces ten abutting rows. Each unbroken run with the
+same payer is collapsed into the single coverage period it represents.
+
+Spans whose payer is `NO_INSURANCE` are excluded. `ENR_BASIS = 'I'` asserts the
+patient was enrolled in insurance, and the CDM has no column to carry the payer,
+so loading uninsured spans would make them read as insured. The consequence is
+that encounters occurring while a patient was uninsured fall outside any
+enrollment period — that is the source data being represented faithfully, not a
+gap in the mapping.
+
+### Terminology and value mapping
 
 Smoking status (LOINC 72166-2) is written to `OBS_CLIN` as an observation and
 also crosswalked into `VITAL.SMOKING` via `SYNTHEA_SMOKING_MAP`. `TOBACCO` and

@@ -1,6 +1,17 @@
 # Synthea to PCORnet CDM Transformation Functions
 # Converts Synthea CSV output to PCORnet CDM format in SQL Server
 
+#' Tables that load_synthea_data() can populate, for use with its `tables`
+#' argument. PROVIDERID values are stable across runs, so tables carrying a
+#' provider FK stay valid whether or not PROVIDER is reloaded with them.
+#' @export
+SYNTHEA_LOADABLE_TABLES <- c(
+  "EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src",
+  "DEMOGRAPHIC", "DEATH", "ENCOUNTER", "CONDITION", "DIAGNOSIS",
+  "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "IMMUNIZATION",
+  "PROVIDER"
+)
+
 #' Load encounter type mappings
 #' @keywords internal
 .load_encounter_type_map <- function() {
@@ -90,6 +101,9 @@ if (map_file == "") {
 #' @param con_mpi DBI connection to MPI SQL Server database
 #' @param overwrite If TRUE, overwrite existing tables (default: TRUE)
 #' @param batch_size Number of rows to write at a time (default: 10000)
+#' @param tables Character vector of tables to load; NULL (default) loads all.
+#'   See `SYNTHEA_LOADABLE_TABLES`. Source CSVs are read only when a requested
+#'   table needs them, so a single-table load skips the multi-gigabyte files.
 #' @return List with `$cdw` (CDW connection) and `$mpi` (MPI connection)
 #'
 #' @examples
@@ -110,13 +124,26 @@ if (map_file == "") {
 #'
 #' @export
 load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
-                              overwrite = TRUE, batch_size = 10000) {
+                              overwrite = TRUE, batch_size = 10000,
+                              tables = NULL) {
 
   cat("Loading Synthea data from:", synthea_dir, "\n")
 
   # Verify directory exists
   if (!dir.exists(synthea_dir)) {
     stop("Synthea directory not found: ", synthea_dir)
+  }
+
+  # `tables = NULL` loads everything; naming tables loads just those, which
+  # keeps a single-table refresh from rewriting the multi-million-row tables.
+  want <- function(...) is.null(tables) || any(c(...) %in% tables)
+  if (!is.null(tables)) {
+    unknown <- setdiff(tables, SYNTHEA_LOADABLE_TABLES)
+    if (length(unknown) > 0) {
+      stop("Unknown table(s): ", paste(unknown, collapse = ", "),
+           "\nLoadable tables: ", paste(SYNTHEA_LOADABLE_TABLES, collapse = ", "))
+    }
+    cat("Loading only:", paste(tables, collapse = ", "), "\n")
   }
 
   # Load mapping tables
@@ -143,32 +170,29 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     error = function(e) { cat("  Warning: encounters.csv not found\n"); data.frame() }
   )
 
-  conditions <- tryCatch(
-    read.csv(file.path(synthea_dir, "conditions.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: conditions.csv not found\n"); data.frame() }
-  )
+  # Each source file is read only when a requested table needs it; several of
+  # them run to gigabytes.
+  read_synthea_csv <- function(filename, needed, ...) {
+    if (!needed) return(data.frame())
+    tryCatch(
+      read.csv(file.path(synthea_dir, filename), stringsAsFactors = FALSE, ...),
+      error = function(e) { cat("  Warning:", filename, "not found\n"); data.frame() }
+    )
+  }
 
-  medications <- tryCatch(
-    read.csv(file.path(synthea_dir, "medications.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: medications.csv not found\n"); data.frame() }
-  )
+  conditions <- read_synthea_csv("conditions.csv", want("CONDITION"))
+  medications <- read_synthea_csv("medications.csv", want("PRESCRIBING"))
+  procedures <- read_synthea_csv("procedures.csv", want("PROCEDURES"))
+  observations <- read_synthea_csv("observations.csv", want("LAB_RESULT_CM", "VITAL"))
 
-  procedures <- tryCatch(
-    read.csv(file.path(synthea_dir, "procedures.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: procedures.csv not found\n"); data.frame() }
-  )
-
-  observations <- tryCatch(
-    read.csv(file.path(synthea_dir, "observations.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: observations.csv not found\n"); data.frame() }
-  )
+  # CODE holds CVX codes, which are zero-padded ("08", "03"). Reading them as
+  # character keeps the padding that numeric coercion would strip.
+  immunizations <- read_synthea_csv("immunizations.csv", want("IMMUNIZATION"),
+                                    colClasses = c(CODE = "character"))
 
   # claims.csv is the billing-context source for DIAGNOSIS. Problem-list
   # entries come from conditions.csv and land in CONDITION instead.
-  claims <- tryCatch(
-    read.csv(file.path(synthea_dir, "claims.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: claims.csv not found\n"); data.frame() }
-  )
+  claims <- read_synthea_csv("claims.csv", want("DIAGNOSIS"))
 
   # ============================================================================
   # Create ID mappings (Synthea UUID -> PCORnet format)
@@ -194,6 +218,10 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   } else {
     encounter_map <- data.frame(synthea_id = character(), encounterid = character())
   }
+
+  # Synthetic provider pool that the PROVIDER table is built from. Tables that
+  # carry a provider FK draw their IDs from here so the references resolve.
+  provider_ids <- paste0("PROV", sprintf("%06d", 1:500))
 
   # ============================================================================
   # MPI Database
@@ -224,7 +252,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   enterprise_records$FirstSdx <- substr(enterprise_records$First, 1, 4)
   enterprise_records$LastSdx <- substr(enterprise_records$Last, 1, 4)
 
-  .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
+  if (want("EnterpriseRecords")) .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
 
   # EnterpriseRecords_Ext
   is_deceased <- !is.na(patients$DEATHDATE) & patients$DEATHDATE != ""
@@ -253,7 +281,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     stringsAsFactors = FALSE
   )
 
-  .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
+  if (want("EnterpriseRecords_Ext")) .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
 
   # Mpi mapping table
   mpi <- data.frame(
@@ -263,7 +291,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     Organization = "SYNTHEA",
     stringsAsFactors = FALSE
   )
-  .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
+  if (want("Mpi")) .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
 
   # MPI_Src
   mpi_src <- data.frame(
@@ -272,9 +300,11 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     Description = "Synthea Synthetic Patient Generator",
     stringsAsFactors = FALSE
   )
-  .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
+  if (want("MPI_Src")) .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
 
-  cat("  MPI database created\n")
+  if (want("EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src")) {
+    cat("  MPI database created\n")
+  }
 
   # ============================================================================
   # CDW Database - DEMOGRAPHIC
@@ -309,15 +339,17 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     stringsAsFactors = FALSE
   )
 
-  .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
-  cat("  DEMOGRAPHIC:", nrow(demographic), "records\n")
+  if (want("DEMOGRAPHIC")) {
+    .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
+    cat("  DEMOGRAPHIC:", nrow(demographic), "records\n")
+  }
 
   # ============================================================================
   # CDW Database - DEATH
   # ============================================================================
 
   deceased_patients <- patients[is_deceased, ]
-  if (nrow(deceased_patients) > 0) {
+  if (want("DEATH") && nrow(deceased_patients) > 0) {
     death_records <- data.frame(
       PATID = patient_map$patid[is_deceased],
       DEATH_DATE = as.Date(deceased_patients$DEATHDATE),
@@ -339,7 +371,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   # CDW Database - ENCOUNTER
   # ============================================================================
 
-  if (nrow(encounters) > 0) {
+  if (want("ENCOUNTER") && nrow(encounters) > 0) {
     # Map patient IDs
     encounters$PATID <- patient_map$patid[match(encounters$PATIENT, patient_map$synthea_id)]
     encounters$UID <- patient_map$uid[match(encounters$PATIENT, patient_map$synthea_id)]
@@ -601,7 +633,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     is_vital <- observations$CODE %in% vital_codes
 
     # Labs
-    labs <- observations[!is_vital, ]
+    labs <- if (want("LAB_RESULT_CM")) observations[!is_vital, ] else observations[0, ]
     if (nrow(labs) > 0) {
       lab_df <- data.frame(
         LAB_RESULT_CM_ID = paste0("LAB", sprintf("%010d", 1:nrow(labs))),
@@ -644,7 +676,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     }
 
     # Vitals - aggregate by encounter
-    vitals <- observations[is_vital, ]
+    vitals <- if (want("VITAL")) observations[is_vital, ] else observations[0, ]
     if (nrow(vitals) > 0) {
       # Pivot vitals by encounter
       vital_wide <- vitals %>%
@@ -691,11 +723,87 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   }
 
   # ============================================================================
+  # CDW Database - IMMUNIZATION
+  # ============================================================================
+
+  if (nrow(immunizations) > 0) {
+    immunizations$PATID <- patient_map$patid[match(immunizations$PATIENT, patient_map$synthea_id)]
+    immunizations$UID <- patient_map$uid[match(immunizations$PATIENT, patient_map$synthea_id)]
+    immunizations$ENCOUNTERID <- encounter_map$encounterid[match(immunizations$ENCOUNTER, encounter_map$synthea_id)]
+
+    # PATID and ENCOUNTERID are NOT NULL in the CDM, so drop any dose whose
+    # patient or encounter did not resolve rather than writing a broken FK.
+    unresolved <- is.na(immunizations$PATID) | is.na(immunizations$ENCOUNTERID)
+    if (any(unresolved)) {
+      cat("  IMMUNIZATION: dropping", sum(unresolved), "doses with unresolved PATID/ENCOUNTERID\n")
+      immunizations <- immunizations[!unresolved, ]
+    }
+  }
+
+  if (nrow(immunizations) > 0) {
+    # Synthea records the administering clinician on the encounter, not on the
+    # dose. Map each Synthea provider onto the synthetic pool so the same
+    # clinician always resolves to the same PROVIDERID.
+    if (nrow(encounters) > 0) {
+      synthea_provider <- encounters$PROVIDER[match(immunizations$ENCOUNTER, encounters$Id)]
+      provider_slot <- match(synthea_provider, unique(encounters$PROVIDER))
+      vx_providerid <- provider_ids[((provider_slot - 1) %% length(provider_ids)) + 1]
+    } else {
+      vx_providerid <- NA_character_
+    }
+
+    vx_admin_date <- as.Date(substr(immunizations$DATE, 1, 10))
+
+    immunization_df <- data.frame(
+      IMMUNIZATIONID = paste0("IMM", sprintf("%010d", 1:nrow(immunizations))),
+      PATID = immunizations$PATID,
+      ENCOUNTERID = immunizations$ENCOUNTERID,
+      PROCEDURESID = NA_character_,
+      VX_PROVIDERID = vx_providerid,
+      VX_RECORD_DATE = vx_admin_date,
+      VX_ADMIN_DATE = vx_admin_date,
+      # Synthea emits CVX codes and only records doses that were given.
+      VX_CODE = immunizations$CODE,
+      VX_CODE_TYPE = "CX",
+      VX_STATUS = "CP",
+      VX_STATUS_REASON = NA_character_,
+      VX_SOURCE = "OD",
+      # Not modelled by Synthea.
+      VX_DOSE = NA_real_,
+      VX_DOSE_UNIT = NA_character_,
+      VX_ROUTE = NA_character_,
+      VX_BODY_SITE = NA_character_,
+      VX_LOT_NUM = NA_character_,
+      VX_MANUFACTURER = NA_character_,
+      VX_EXP_DATE = as.Date(NA),
+      RAW_VX_CODE = immunizations$CODE,
+      RAW_VX_CODE_TYPE = "CVX",
+      RAW_VX_NAME = immunizations$DESCRIPTION,
+      RAW_VX_STATUS = "completed",
+      RAW_VX_STATUS_REASON = NA_character_,
+      RAW_VX_DOSE = NA_character_,
+      RAW_VX_DOSE_UNIT = NA_character_,
+      RAW_VX_ROUTE = NA_character_,
+      RAW_VX_BODY_SITE = NA_character_,
+      RAW_VX_MANUFACTURER = NA_character_,
+      RAW_ENCOUNTERID = immunizations$ENCOUNTER,
+      CDW_Source = "SYNTHEA",
+      CDW_UpdatedDTTM = CURRENT_DATETIME,
+      GPC_FLAG = "Y",
+      UID = immunizations$UID,
+      stringsAsFactors = FALSE
+    )
+
+    .write_table_batched(con_cdw, "IMMUNIZATION", immunization_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  IMMUNIZATION:", nrow(immunization_df), "records\n")
+  }
+
+  # ============================================================================
   # CDW Database - PROVIDER
   # ============================================================================
 
   providers <- data.frame(
-    PROVIDERID = paste0("PROV", sprintf("%06d", 1:500)),
+    PROVIDERID = provider_ids,
     ProviderName = paste("Dr.", paste0(sample(LETTERS, 500, replace = TRUE),
                                        sapply(1:500, function(x) paste(sample(letters, 5), collapse = "")))),
     PROVIDER_SPECIALTY_PRIMARY = sample(c("Internal Medicine", "Family Medicine", "Cardiology",
@@ -704,7 +812,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     GPC_FLAG = "Y",
     stringsAsFactors = FALSE
   )
-  .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
+  if (want("PROVIDER")) .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
 
   # ============================================================================
   # Summary

@@ -101,6 +101,24 @@ The converter uses these Synthea CSV files:
 | `medications.csv` | PRESCRIBING |
 | `procedures.csv` | PROCEDURES |
 | `observations.csv` | LAB_RESULT_CM, VITAL |
+| `immunizations.csv` | IMMUNIZATION |
+
+Synthea does not model medication administration events, so `MED_ADMIN` has no
+source here. `DISPENSING` requires an NDC, which Synthea does not emit — it
+codes medications in RxNorm only.
+
+## Loading Selected Tables
+
+Pass `tables` to refresh part of the CDM without rewriting the rest. Source CSVs
+are read only when a requested table needs them, so this also skips the
+multi-gigabyte files:
+
+```r
+load_synthea_data("~/synthea/output/csv", con_cdw, con_mpi,
+                  tables = "IMMUNIZATION")
+```
+
+See `SYNTHEA_LOADABLE_TABLES` for the accepted names.
 
 ## Terminology Mappings
 
@@ -108,6 +126,7 @@ Synthea uses different code systems than PCORnet CDM:
 
 | Synthea | PCORnet | Mapping |
 |---------|---------|---------|
+| CVX | `VX_CODE_TYPE = 'CX'` | direct, no crosswalk needed |
 | SNOMED-CT | ICD-10-CM | `mappings/snomed_icd10_common.csv` |
 | Encounter class | ENC_TYPE | `mappings/encounter_type_map.csv` |
 

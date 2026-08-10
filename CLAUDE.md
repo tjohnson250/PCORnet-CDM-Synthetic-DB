@@ -92,6 +92,7 @@ dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv",
 - `OBS_CLIN`: Clinical observations with LOINC codes (surveys, exams, social
   history, and the vital signs VITAL has no column for)
 - `IMMUNIZATION`: Administered vaccine doses with CVX codes
+- `ENROLLMENT`: Insurance coverage periods (`ENR_BASIS = 'I'`)
 - `PROVIDER`: Provider directory
 
 ### Key Identifiers

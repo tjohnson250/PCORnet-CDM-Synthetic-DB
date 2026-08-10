@@ -9,7 +9,7 @@ SYNTHEA_LOADABLE_TABLES <- c(
   "EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src",
   "DEMOGRAPHIC", "DEATH", "ENCOUNTER", "CONDITION", "DIAGNOSIS",
   "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "OBS_CLIN",
-  "IMMUNIZATION", "PROVIDER"
+  "IMMUNIZATION", "ENROLLMENT", "PROVIDER"
 )
 
 #' Load encounter type mappings
@@ -215,6 +215,11 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   # entries come from conditions.csv and land in CONDITION instead.
   claims <- read_synthea_csv("claims.csv", want("DIAGNOSIS"))
 
+  # Insurance coverage spans, and the payer names needed to tell an insured
+  # span from an uninsured one.
+  payer_transitions <- read_synthea_csv("payer_transitions.csv", want("ENROLLMENT"))
+  payers <- read_synthea_csv("payers.csv", want("ENROLLMENT"))
+
   # ============================================================================
   # Create ID mappings (Synthea UUID -> PCORnet format)
   # ============================================================================
@@ -386,6 +391,74 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     )
     .write_table_batched(con_cdw, "DEATH", death_records, overwrite = overwrite, batch_size = batch_size)
     cat("  DEATH:", nrow(death_records), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - ENROLLMENT  (insurance coverage, from payer_transitions.csv)
+  # ============================================================================
+
+  if (want("ENROLLMENT") && nrow(payer_transitions) > 0) {
+    enr <- payer_transitions
+    enr$PATID <- patient_map$patid[match(enr$PATIENT, patient_map$synthea_id)]
+    enr$UID <- patient_map$uid[match(enr$PATIENT, patient_map$synthea_id)]
+    enr$start <- as.Date(substr(enr$START_DATE, 1, 10))
+    enr$end <- as.Date(substr(enr$END_DATE, 1, 10))
+
+    unresolved <- is.na(enr$PATID) | is.na(enr$start)
+    if (any(unresolved)) {
+      cat("  ENROLLMENT: dropping", sum(unresolved),
+          "spans with unresolved PATID or start date\n")
+      enr <- enr[!unresolved, ]
+    }
+
+    # ENR_BASIS = 'I' asserts the patient was enrolled in insurance, so spans
+    # where Synthea recorded no payer are not enrollment periods. The CDM has
+    # nowhere to carry the payer, so keeping them would read as insured.
+    if (nrow(payers) > 0) {
+      uninsured_ids <- payers$Id[payers$NAME == "NO_INSURANCE"]
+      n_uninsured <- sum(enr$PAYER %in% uninsured_ids)
+      if (n_uninsured > 0) {
+        cat("  ENROLLMENT: excluding", n_uninsured, "uninsured spans\n")
+        enr <- enr[!enr$PAYER %in% uninsured_ids, ]
+      }
+    }
+  } else {
+    enr <- data.frame()
+  }
+
+  if (nrow(enr) > 0) {
+    # Synthea emits one span per payer per year, so a patient on the same plan
+    # for a decade produces ten abutting rows. Collapse each unbroken run with
+    # the same payer into the single enrollment period it represents.
+    enr <- enr[order(enr$PATID, enr$PAYER, enr$start), ]
+    n <- nrow(enr)
+    starts_run <- c(TRUE,
+                    enr$PATID[-1] != enr$PATID[-n] |
+                    enr$PAYER[-1] != enr$PAYER[-n] |
+                    enr$start[-1] > enr$end[-n])
+    run_id <- cumsum(starts_run)
+    first_of_run <- which(starts_run)
+    # A later span in a run can end earlier than an earlier one, so take the
+    # run's latest end rather than the last row's.
+    run_end <- as.Date(tapply(as.numeric(enr$end), run_id, max), origin = "1970-01-01")
+
+    enrollment_df <- data.frame(
+      PATID = enr$PATID[first_of_run],
+      ENR_START_DATE = enr$start[first_of_run],
+      ENR_END_DATE = unname(run_end),
+      ENR_BASIS = "I",
+      CHART = NA_character_,
+      GPC_FLAG = "Y",
+      UID = enr$UID[first_of_run],
+      MPI_LID = NA_character_,
+      MPI_SRC = NA_character_,
+      stringsAsFactors = FALSE
+    )
+
+    cat("  ENROLLMENT: collapsed", n, "yearly spans into",
+        nrow(enrollment_df), "coverage periods\n")
+    .write_table_batched(con_cdw, "ENROLLMENT", enrollment_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  ENROLLMENT:", nrow(enrollment_df), "records\n")
   }
 
   # ============================================================================

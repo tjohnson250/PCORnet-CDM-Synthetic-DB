@@ -88,7 +88,9 @@ dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv",
 - `PROCEDURES`: CPT procedures linked to encounters
 - `LAB_RESULT_CM`: Laboratory results with LOINC codes
 - `PRESCRIBING`: Medication prescriptions with RxNorm codes
-- `VITAL`: Vital signs (height, weight, BP, BMI)
+- `VITAL`: Vital signs (height, weight, BP, BMI, smoking status)
+- `OBS_CLIN`: Clinical observations with LOINC codes (surveys, exams, social
+  history, and the vital signs VITAL has no column for)
 - `IMMUNIZATION`: Administered vaccine doses with CVX codes
 - `PROVIDER`: Provider directory
 

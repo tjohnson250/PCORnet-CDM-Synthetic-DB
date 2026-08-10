@@ -9,7 +9,7 @@ SYNTHEA_LOADABLE_TABLES <- c(
   "EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src",
   "DEMOGRAPHIC", "DEATH", "ENCOUNTER", "CONDITION", "DIAGNOSIS",
   "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "OBS_CLIN",
-  "IMMUNIZATION", "ENROLLMENT", "PROVIDER"
+  "IMMUNIZATION", "ENROLLMENT", "DISPENSING", "PROVIDER"
 )
 
 #' Load encounter type mappings
@@ -88,6 +88,50 @@ if (map_file == "") {
 .map_snomed_to_icd10 <- function(snomed_code, snomed_map) {
   result <- snomed_map$icd10_code[match(as.character(snomed_code), snomed_map$snomed_code)]
   ifelse(is.na(result), NA, result)
+}
+
+#' Load the RxNorm to NDC crosswalk
+#'
+#' Synthea codes medications in RxNorm, but DISPENSING.NDC is NOT NULL, so a
+#' crosswalk is required. `synthea/mappings/rxnorm_ndc.csv` was built from the
+#' NLM RxNav API (`/REST/rxcui/{id}/ndcs.json`, falling back to
+#' `allhistoricalndcs.json` for retired products) and is checked in so loads are
+#' reproducible and need no network access.
+#' @keywords internal
+.load_rxnorm_ndc_map <- function() {
+  map_file <- system.file("synthea", "mappings", "rxnorm_ndc.csv",
+                          package = "pcornet.synthetic")
+  if (map_file == "") {
+    map_file <- file.path("synthea", "mappings", "rxnorm_ndc.csv")
+  }
+  if (file.exists(map_file)) {
+    read.csv(map_file, stringsAsFactors = FALSE,
+             colClasses = c(rxcui = "character", ndc = "character"))
+  } else {
+    data.frame(rxcui = character(), ndc = character(), ndc_source = character(),
+               stringsAsFactors = FALSE)
+  }
+}
+
+#' Pick one NDC per dispensing event from a CUI's candidates
+#'
+#' A clinical drug maps to many NDCs, one per manufacturer and package size, and
+#' Synthea gives nothing to choose between them. Rotating through the candidates
+#' mirrors a pharmacy switching between suppliers. `index` must vary across
+#' every dispensing row rather than restarting per prescription, or drugs whose
+#' prescriptions are mostly single-fill would only ever get the first NDC.
+#' Indexing by position keeps the choice reproducible across runs.
+#' @keywords internal
+.assign_ndc <- function(rxcui, ndc_map, index) {
+  candidates <- split(ndc_map$ndc, ndc_map$rxcui)
+  # unname throughout: subsetting a named vector by CUI carries the names into
+  # the result, which turns an otherwise plain character vector into a named one.
+  n_candidates <- unname(lengths(candidates)[rxcui])
+  first_of_cui <- match(rxcui, names(candidates))
+  offset <- (index %% n_candidates) + 1
+  starts <- c(0, cumsum(unname(lengths(candidates)))[-length(candidates)])
+  flat <- unlist(candidates, use.names = FALSE)
+  unname(flat[starts[first_of_cui] + offset])
 }
 
 #' Map Synthea encounter IDs onto the synthetic PROVIDER pool
@@ -202,7 +246,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   }
 
   conditions <- read_synthea_csv("conditions.csv", want("CONDITION"))
-  medications <- read_synthea_csv("medications.csv", want("PRESCRIBING"))
+  medications <- read_synthea_csv("medications.csv", want("PRESCRIBING", "DISPENSING"))
   procedures <- read_synthea_csv("procedures.csv", want("PROCEDURES"))
   observations <- read_synthea_csv("observations.csv", want("LAB_RESULT_CM", "VITAL", "OBS_CLIN"))
 
@@ -632,9 +676,14 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     medications$PATID <- patient_map$patid[match(medications$PATIENT, patient_map$synthea_id)]
     medications$UID <- patient_map$uid[match(medications$PATIENT, patient_map$synthea_id)]
     medications$ENCOUNTERID <- encounter_map$encounterid[match(medications$ENCOUNTER, encounter_map$synthea_id)]
+    # Derived from row order, so DISPENSING resolves the same IDs whether or not
+    # PRESCRIBING is being written in this run.
+    medications$PRESCRIBINGID <- paste0("RX", sprintf("%010d", 1:nrow(medications)))
+  }
 
+  if (want("PRESCRIBING") && nrow(medications) > 0) {
     prescribing_df <- data.frame(
-      PRESCRIBINGID = paste0("RX", sprintf("%010d", 1:nrow(medications))),
+      PRESCRIBINGID = medications$PRESCRIBINGID,
       PATID = medications$PATID,
       ENCOUNTERID = medications$ENCOUNTERID,
       RX_PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, nrow(medications), replace = TRUE))),
@@ -672,6 +721,83 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
 
     .write_table_batched(con_cdw, "PRESCRIBING", prescribing_df, overwrite = overwrite, batch_size = batch_size)
     cat("  PRESCRIBING:", nrow(prescribing_df), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - DISPENSING  (one row per fill, from medications.csv)
+  # ============================================================================
+
+  if (want("DISPENSING") && nrow(medications) > 0) {
+    ndc_map <- .load_rxnorm_ndc_map()
+    if (nrow(ndc_map) == 0) {
+      stop("DISPENSING needs synthea/mappings/rxnorm_ndc.csv: NDC is NOT NULL ",
+           "in the CDM and Synthea codes medications in RxNorm only.")
+    }
+
+    disp <- medications
+    disp$rxcui <- as.character(disp$CODE)
+    disp$start <- as.Date(substr(disp$START, 1, 10))
+
+    # NDC is NOT NULL, so a prescription whose RxCUI has no NDC cannot be
+    # represented at all. Dropping it beats inventing a code.
+    no_ndc <- !disp$rxcui %in% ndc_map$rxcui
+    unresolved <- is.na(disp$PATID) | is.na(disp$start)
+    if (any(no_ndc)) {
+      cat("  DISPENSING: dropping", sum(no_ndc), "prescriptions across",
+          length(unique(disp$rxcui[no_ndc])), "RxCUIs with no NDC mapping\n")
+    }
+    if (any(unresolved)) {
+      cat("  DISPENSING: dropping", sum(unresolved),
+          "prescriptions with unresolved PATID or start date\n")
+    }
+    disp <- disp[!no_ndc & !unresolved, ]
+  } else {
+    disp <- data.frame()
+  }
+
+  if (nrow(disp) > 0) {
+    # One row per prescription rather than per fill. Synthea reports how many
+    # times a prescription was dispensed but never when: it leaves STOP blank
+    # while a prescription is active and sets it equal to START for same-day
+    # courses, so roughly three quarters of fills have no span to spread over
+    # and would land stacked on the start date. A row per prescription keeps
+    # every DISPENSE_DATE a date the source actually recorded. The cost is that
+    # the fill count goes unrepresented, the CDM having no column for it.
+    total_fills <- sum(pmax(1, suppressWarnings(as.integer(disp$DISPENSES)), na.rm = TRUE))
+    cat("  DISPENSING: one row per prescription;",
+        format(total_fills, big.mark = ","), "recorded fills are not represented\n")
+
+    dispensing_df <- data.frame(
+      DISPENSINGID = paste0("DISP", sprintf("%010d", seq_len(nrow(disp)))),
+      PATID = disp$PATID,
+      PRESCRIBINGID = disp$PRESCRIBINGID,
+      # Index by row so a drug whose NDC list is long still rotates through it
+      # instead of every prescription drawing the same manufacturer.
+      NDC = .assign_ndc(disp$rxcui, ndc_map, seq_len(nrow(disp)) - 1L),
+      DISPENSE_DATE = disp$start,
+      # Synthea records no days supply, no quantity, and no dose or route.
+      # Deriving a supply from span/fills would be inference, not mapping, and
+      # produces absurdities for a prescription spanning years with one fill.
+      DISPENSE_SUP = NA_real_,
+      DISPENSE_AMT = NA_real_,
+      DISPENSE_DOSE_DISP = NA_real_,
+      DISPENSE_DOSE_DISP_UNIT = NA_character_,
+      DISPENSE_ROUTE = NA_character_,
+      DISPENSE_SOURCE = "OD",
+      RAW_NDC = NA_character_,
+      RAW_DISP_MED_NAME = disp$DESCRIPTION,
+      RAW_DISPENSE_DOSE_DISP = NA_character_,
+      RAW_DISPENSE_DOSE_DISP_UNIT = NA_character_,
+      RAW_DISPENSE_ROUTE = NA_character_,
+      CDW_Source = "SYNTHEA",
+      CDW_UpdatedDTTM = CURRENT_DATETIME,
+      GPC_FLAG = "Y",
+      UID = disp$UID,
+      stringsAsFactors = FALSE
+    )
+
+    .write_table_batched(con_cdw, "DISPENSING", dispensing_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  DISPENSING:", nrow(dispensing_df), "records\n")
   }
 
   # ============================================================================

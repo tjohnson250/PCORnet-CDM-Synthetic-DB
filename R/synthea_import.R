@@ -8,8 +8,8 @@
 SYNTHEA_LOADABLE_TABLES <- c(
   "EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src",
   "DEMOGRAPHIC", "DEATH", "ENCOUNTER", "CONDITION", "DIAGNOSIS",
-  "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "IMMUNIZATION",
-  "PROVIDER"
+  "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "OBS_CLIN",
+  "IMMUNIZATION", "PROVIDER"
 )
 
 #' Load encounter type mappings
@@ -89,6 +89,27 @@ if (map_file == "") {
   result <- snomed_map$icd10_code[match(as.character(snomed_code), snomed_map$snomed_code)]
   ifelse(is.na(result), NA, result)
 }
+
+#' Map Synthea encounter IDs onto the synthetic PROVIDER pool
+#'
+#' Synthea records the clinician on the encounter rather than on the individual
+#' clinical event. Going through unique() keeps a given Synthea clinician on the
+#' same PROVIDERID in every table that carries a provider FK.
+#' @keywords internal
+.map_encounter_provider <- function(synthea_encounter_ids, encounters, provider_ids) {
+  if (nrow(encounters) == 0) return(NA_character_)
+  synthea_provider <- encounters$PROVIDER[match(synthea_encounter_ids, encounters$Id)]
+  slot <- match(synthea_provider, unique(encounters$PROVIDER))
+  provider_ids[((slot - 1) %% length(provider_ids)) + 1]
+}
+
+#' Synthea findings for LOINC 72166-2 mapped to the PCORnet SMOKING valueset
+#' @keywords internal
+SYNTHEA_SMOKING_MAP <- c(
+  "Never smoked tobacco (finding)" = "04",  # Never smoker
+  "Ex-smoker (finding)"            = "03",  # Former smoker
+  "Smokes tobacco daily (finding)" = "01"   # Current every day smoker
+)
 
 #' Load and transform Synthea data to PCORnet CDM format
 #'
@@ -183,7 +204,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
   conditions <- read_synthea_csv("conditions.csv", want("CONDITION"))
   medications <- read_synthea_csv("medications.csv", want("PRESCRIBING"))
   procedures <- read_synthea_csv("procedures.csv", want("PROCEDURES"))
-  observations <- read_synthea_csv("observations.csv", want("LAB_RESULT_CM", "VITAL"))
+  observations <- read_synthea_csv("observations.csv", want("LAB_RESULT_CM", "VITAL", "OBS_CLIN"))
 
   # CODE holds CVX codes, which are zero-padded ("08", "03"). Reading them as
   # character keeps the padding that numeric coercion would strip.
@@ -628,13 +649,35 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     observations$UID <- patient_map$uid[match(observations$PATIENT, patient_map$synthea_id)]
     observations$ENCOUNTERID <- encounter_map$encounterid[match(observations$ENCOUNTER, encounter_map$synthea_id)]
 
-    # Split into labs and vitals based on category or code
-    vital_codes <- c("8302-2", "29463-7", "39156-5", "8480-6", "8462-4", "8310-5")
+    # Exactly the codes VITAL has a column for. Selecting by code rather than
+    # category means a height still reaches VITAL whatever category Synthea
+    # filed it under. Body temperature (8310-5) is deliberately absent: PCORnet
+    # gives VITAL no column for it, so listing it here pulled temperature out of
+    # OBS_CLIN and then discarded the value, leaving behind a VITAL row with
+    # every measurement null.
+    vital_codes <- c("8302-2", "29463-7", "39156-5", "8480-6", "8462-4")
     is_vital <- observations$CODE %in% vital_codes
+    is_lab <- !is_vital & observations$CATEGORY == "laboratory"
+    # QALY, DALY and QOLS carry a blank category and are not LOINC. They score
+    # the simulation rather than describe the patient, so they enter no table.
+    is_simulation_metric <- observations$CATEGORY == ""
+    # OBS_CLIN takes every non-laboratory observation, the vital signs among
+    # them included. Height, weight, BMI and blood pressure therefore land in
+    # both OBS_CLIN and VITAL: the duplication is intended, because PCORnet is
+    # deprecating VITAL and OBS_CLIN is where these measures will live.
+    is_obs_clin <- !is_lab & !is_simulation_metric
+
+    if (any(is_simulation_metric)) {
+      cat("  observations: skipping", sum(is_simulation_metric),
+          "simulation metrics (QALY/DALY/QOLS)\n")
+    }
 
     # Labs
-    labs <- if (want("LAB_RESULT_CM")) observations[!is_vital, ] else observations[0, ]
+    labs <- if (want("LAB_RESULT_CM")) observations[is_lab, ] else observations[0, ]
     if (nrow(labs) > 0) {
+      # Synthea types every value; only the numeric ones belong in RESULT_NUM,
+      # and the text ones would otherwise survive only in RAW_RESULT.
+      lab_is_numeric <- labs$TYPE == "numeric"
       lab_df <- data.frame(
         LAB_RESULT_CM_ID = paste0("LAB", sprintf("%010d", 1:nrow(labs))),
         PATID = labs$PATID,
@@ -644,9 +687,9 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
         LAB_PX_TYPE = NA_character_,
         LAB_ORDER_DATE = as.Date(substr(labs$DATE, 1, 10)),
         RESULT_DATE = as.Date(substr(labs$DATE, 1, 10)),
-        RESULT_TIME = NA_character_,
-        RESULT_NUM = as.numeric(labs$VALUE),
-        RESULT_QUAL = NA_character_,
+        RESULT_TIME = substr(labs$DATE, 12, 16),
+        RESULT_NUM = ifelse(lab_is_numeric, suppressWarnings(as.numeric(labs$VALUE)), NA_real_),
+        RESULT_QUAL = ifelse(lab_is_numeric, NA_character_, labs$VALUE),
         RESULT_MODIFIER = NA_character_,
         RESULT_UNIT = labs$UNITS,
         NORM_RANGE_LOW = NA_character_,
@@ -688,12 +731,28 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
           values_fn = function(x) as.numeric(x[1])
         )
 
+      # Smoking status is a separate observation (LOINC 72166-2) recorded at the
+      # same encounter and instant, so it joins onto the pivoted vitals rather
+      # than creating rows of its own. It is also kept in OBS_CLIN as a LOINC
+      # observation in its own right.
+      smoking_obs <- observations[observations$CODE == "72166-2", ]
+      smoking_key <- paste(smoking_obs$ENCOUNTERID, smoking_obs$DATE)
+      vital_key <- paste(vital_wide$ENCOUNTERID, vital_wide$DATE)
+      smoking_raw <- smoking_obs$VALUE[match(vital_key, smoking_key)]
+      smoking_code <- unname(SYNTHEA_SMOKING_MAP[smoking_raw])
+
+      unmapped <- unique(smoking_raw[!is.na(smoking_raw) & is.na(smoking_code)])
+      if (length(unmapped) > 0) {
+        cat("  VITAL: no SMOKING mapping for", length(unmapped), "finding(s):",
+            paste(unmapped, collapse = "; "), "\n")
+      }
+
       vital_df <- data.frame(
         VITALID = paste0("VIT", sprintf("%010d", 1:nrow(vital_wide))),
         PATID = vital_wide$PATID,
         ENCOUNTERID = vital_wide$ENCOUNTERID,
         MEASURE_DATE = as.Date(substr(vital_wide$DATE, 1, 10)),
-        MEASURE_TIME = NA_character_,
+        MEASURE_TIME = substr(vital_wide$DATE, 12, 16),
         VITAL_SOURCE = "HC",
         HT = if ("8302-2" %in% names(vital_wide)) vital_wide$`8302-2` else NA,
         WT = if ("29463-7" %in% names(vital_wide)) vital_wide$`29463-7` else NA,
@@ -701,13 +760,15 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
         SYSTOLIC = if ("8480-6" %in% names(vital_wide)) vital_wide$`8480-6` else NA,
         DIASTOLIC = if ("8462-4" %in% names(vital_wide)) vital_wide$`8462-4` else NA,
         BP_POSITION = NA_character_,
-        SMOKING = NA_character_,
+        SMOKING = smoking_code,
+        # Synthea reports smoking only, which says nothing about smokeless
+        # tobacco, so the broader TOBACCO fields stay unknown.
         TOBACCO = NA_character_,
         TOBACCO_TYPE = NA_character_,
         RAW_SYSTOLIC = NA_character_,
         RAW_DIASTOLIC = NA_character_,
         RAW_BP_POSITION = NA_character_,
-        RAW_SMOKING = NA_character_,
+        RAW_SMOKING = smoking_raw,
         RAW_TOBACCO = NA_character_,
         RAW_TOBACCO_TYPE = NA_character_,
         CDW_Source = "SYNTHEA",
@@ -719,6 +780,56 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
 
       .write_table_batched(con_cdw, "VITAL", vital_df, overwrite = overwrite, batch_size = batch_size)
       cat("  VITAL:", nrow(vital_df), "records\n")
+      cat("    SMOKING populated on", sum(!is.na(vital_df$SMOKING)), "rows\n")
+    }
+
+    # Clinical observations: everything Synthea records that is not a lab
+    # result. That covers body temperature, heart rate, respiratory rate,
+    # oxygen saturation and pain scores, which have no VITAL column at all, as
+    # well as the measures VITAL does carry, which are written to both tables.
+    obs_clin <- if (want("OBS_CLIN")) observations[is_obs_clin, ] else observations[0, ]
+    if (nrow(obs_clin) > 0) {
+      obs_is_numeric <- obs_clin$TYPE == "numeric"
+      obs_start_date <- as.Date(substr(obs_clin$DATE, 1, 10))
+
+      obs_clin_df <- data.frame(
+        OBSCLINID = paste0("OBSC", sprintf("%010d", 1:nrow(obs_clin))),
+        PATID = obs_clin$PATID,
+        ENCOUNTERID = obs_clin$ENCOUNTERID,
+        OBSCLIN_PROVIDERID = .map_encounter_provider(obs_clin$ENCOUNTER, encounters, provider_ids),
+        OBSCLIN_START_DATE = obs_start_date,
+        OBSCLIN_START_TIME = substr(obs_clin$DATE, 12, 16),
+        # Synthea observations are instantaneous, so there is no stop.
+        OBSCLIN_STOP_DATE = as.Date(NA),
+        OBSCLIN_STOP_TIME = NA_character_,
+        OBSCLIN_TYPE = "LC",
+        OBSCLIN_CODE = obs_clin$CODE,
+        OBSCLIN_RESULT_NUM = ifelse(obs_is_numeric, suppressWarnings(as.numeric(obs_clin$VALUE)), NA_real_),
+        OBSCLIN_RESULT_UNIT = ifelse(obs_clin$UNITS == "", NA_character_, obs_clin$UNITS),
+        OBSCLIN_RESULT_TEXT = ifelse(obs_is_numeric, NA_character_, obs_clin$VALUE),
+        OBSCLIN_RESULT_QUAL = NA_character_,
+        OBSCLIN_RESULT_SNOMED = NA_character_,
+        OBSCLIN_RESULT_MODIFIER = NA_character_,
+        OBSCLIN_ABN_IND = NA_character_,
+        # Survey responses come from the patient; the rest are recorded in the
+        # care setting.
+        OBSCLIN_SOURCE = ifelse(obs_clin$CATEGORY == "survey", "PR", "HC"),
+        RAW_OBSCLIN_CODE = obs_clin$CODE,
+        RAW_OBSCLIN_TYPE = "LOINC",
+        RAW_OBSCLIN_NAME = obs_clin$DESCRIPTION,
+        RAW_OBSCLIN_RESULT = obs_clin$VALUE,
+        RAW_OBSCLIN_UNIT = obs_clin$UNITS,
+        RAW_OBSCLIN_MODIFIER = NA_character_,
+        RAW_ENCOUNTERID = obs_clin$ENCOUNTER,
+        CDW_Source = "SYNTHEA",
+        CDW_UpdatedDTTM = CURRENT_DATETIME,
+        GPC_FLAG = "Y",
+        UID = obs_clin$UID,
+        stringsAsFactors = FALSE
+      )
+
+      .write_table_batched(con_cdw, "OBS_CLIN", obs_clin_df, overwrite = overwrite, batch_size = batch_size)
+      cat("  OBS_CLIN:", nrow(obs_clin_df), "records\n")
     }
   }
 
@@ -744,13 +855,7 @@ load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
     # Synthea records the administering clinician on the encounter, not on the
     # dose. Map each Synthea provider onto the synthetic pool so the same
     # clinician always resolves to the same PROVIDERID.
-    if (nrow(encounters) > 0) {
-      synthea_provider <- encounters$PROVIDER[match(immunizations$ENCOUNTER, encounters$Id)]
-      provider_slot <- match(synthea_provider, unique(encounters$PROVIDER))
-      vx_providerid <- provider_ids[((provider_slot - 1) %% length(provider_ids)) + 1]
-    } else {
-      vx_providerid <- NA_character_
-    }
+    vx_providerid <- .map_encounter_provider(immunizations$ENCOUNTER, encounters, provider_ids)
 
     vx_admin_date <- as.Date(substr(immunizations$DATE, 1, 10))
 

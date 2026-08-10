@@ -100,8 +100,35 @@ The converter uses these Synthea CSV files:
 | `conditions.csv` | DIAGNOSIS, CONDITION |
 | `medications.csv` | PRESCRIBING |
 | `procedures.csv` | PROCEDURES |
-| `observations.csv` | LAB_RESULT_CM, VITAL |
+| `observations.csv` | LAB_RESULT_CM, VITAL, OBS_CLIN |
 | `immunizations.csv` | IMMUNIZATION |
+
+### How observations are routed
+
+Synthea files every observation under a `CATEGORY`, and the three destination
+tables split along it:
+
+| Rows | Destination | Why |
+|------|-------------|-----|
+| `CATEGORY = laboratory` | `LAB_RESULT_CM` | actual laboratory results |
+| everything else — `vital-signs`, `survey`, `social-history`, `exam`, `procedure`, `imaging`, `therapy` | `OBS_CLIN` | every non-laboratory observation, including body temperature, heart rate, respiratory rate, oxygen saturation and pain scores, none of which have a `VITAL` column |
+| the five LOINC codes VITAL has columns for — height `8302-2`, weight `29463-7`, BMI `39156-5`, systolic `8480-6`, diastolic `8462-4` | `VITAL` **as well as** `OBS_CLIN` | selected by code, not category, so a height filed under any category still lands here |
+| blank `CATEGORY` (QALY, DALY, QOLS) | *not loaded* | simulation scoring metrics, not patient observations, and not LOINC |
+
+Height, weight, BMI and blood pressure are written to **both** `OBS_CLIN` and
+`VITAL`. The duplication is deliberate: PCORnet is deprecating `VITAL`, and
+`OBS_CLIN` is where these measures are headed, so both are populated while that
+transition is underway. Body temperature is the exception — `VITAL` has no
+column for it, so it exists only in `OBS_CLIN`.
+
+Numeric-typed values go to `OBSCLIN_RESULT_NUM` with their units; text-typed
+values go to `OBSCLIN_RESULT_TEXT`. Survey responses get
+`OBSCLIN_SOURCE = 'PR'` (patient-reported), everything else `'HC'`.
+
+Smoking status (LOINC 72166-2) is written to `OBS_CLIN` as an observation and
+also crosswalked into `VITAL.SMOKING` via `SYNTHEA_SMOKING_MAP`. `TOBACCO` and
+`TOBACCO_TYPE` stay NULL — Synthea reports smoking only, which says nothing
+about smokeless tobacco.
 
 Synthea does not model medication administration events, so `MED_ADMIN` has no
 source here. `DISPENSING` requires an NDC, which Synthea does not emit — it

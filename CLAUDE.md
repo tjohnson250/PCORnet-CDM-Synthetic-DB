@@ -93,6 +93,7 @@ dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv",
   history, and the vital signs VITAL has no column for)
 - `IMMUNIZATION`: Administered vaccine doses with CVX codes
 - `ENROLLMENT`: Insurance coverage periods (`ENR_BASIS = 'I'`)
+- `DISPENSING`: Medication dispensings with NDC codes, one row per prescription
 - `PROVIDER`: Provider directory
 
 ### Key Identifiers

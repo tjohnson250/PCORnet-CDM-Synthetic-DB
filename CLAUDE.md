@@ -52,6 +52,12 @@ dbs <- create_pcornet_database(n_patients = 500, mode = "random", server = "loca
 
 # Synthea mode - Import from Synthea CSV
 dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv", server = "localhost", uid = "sa", pwd = "pw")
+
+# Synthea mode - reload only certain tables (leaves the rest untouched, and
+# skips reading source CSVs those tables don't need)
+dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv",
+                               tables = "IMMUNIZATION",
+                               server = "localhost", uid = "sa", pwd = "pw")
 ```
 
 ### SQL Server Connection Options
@@ -83,6 +89,7 @@ dbs <- create_pcornet_database(mode = "synthea", synthea_dir = "path/to/csv", se
 - `LAB_RESULT_CM`: Laboratory results with LOINC codes
 - `PRESCRIBING`: Medication prescriptions with RxNorm codes
 - `VITAL`: Vital signs (height, weight, BP, BMI)
+- `IMMUNIZATION`: Administered vaccine doses with CVX codes
 - `PROVIDER`: Provider directory
 
 ### Key Identifiers

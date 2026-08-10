@@ -47,6 +47,8 @@ DEFAULT_SOURCES <- list(
 #' @param overwrite If TRUE, overwrite existing tables (default: TRUE)
 #' @param batch_size Number of rows to write at a time for large tables (default: 10000)
 #' @param synthea_dir Path to Synthea CSV output (required when mode = "synthea")
+#' @param tables Character vector of tables to load when mode = "synthea";
+#'   NULL (default) loads all of them. See `SYNTHEA_LOADABLE_TABLES`.
 #' @param profile_weights Named list to override default profile distribution
 #' @param sources Named list of source systems for MPI. Each source should have
 #'   id_field, description, and null_rate. Use DEFAULT_SOURCES as a template.
@@ -120,6 +122,7 @@ create_pcornet_database <- function(
     overwrite = TRUE,
     batch_size = 10000,
     synthea_dir = NULL,
+    tables = NULL,
     profile_weights = NULL,
     sources = NULL
 ) {
@@ -164,7 +167,7 @@ create_pcornet_database <- function(
 
   # Dispatch to appropriate generator
   if (mode == "synthea") {
-    result <- .generate_from_synthea(synthea_dir, con_cdw, con_mpi, overwrite, batch_size)
+    result <- .generate_from_synthea(synthea_dir, con_cdw, con_mpi, overwrite, batch_size, tables)
   } else if (mode == "enhanced") {
     result <- .generate_enhanced(n_patients, current_date, profile_weights, con_cdw, con_mpi, overwrite, batch_size, sources)
   } else {
@@ -1342,9 +1345,11 @@ print.pcornet_summary <- function(x, ...) {
 # SYNTHEA GENERATION (mode = "synthea")
 # =============================================================================
 
-.generate_from_synthea <- function(synthea_dir, con_cdw, con_mpi, overwrite, batch_size) {
+.generate_from_synthea <- function(synthea_dir, con_cdw, con_mpi, overwrite, batch_size,
+                                   tables = NULL) {
   result <- load_synthea_data(synthea_dir, con_cdw = con_cdw, con_mpi = con_mpi,
-                              overwrite = overwrite, batch_size = batch_size)
+                              overwrite = overwrite, batch_size = batch_size,
+                              tables = tables)
 
   # Get counts for summary
   n_patients <- dbGetQuery(result$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")[[1]]

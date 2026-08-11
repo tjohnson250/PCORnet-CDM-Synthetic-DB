@@ -1,5 +1,16 @@
 # Synthea to PCORnet CDM Transformation Functions
-# Converts Synthea CSV output to PCORnet CDM format in DuckDB
+# Converts Synthea CSV output to PCORnet CDM format in SQL Server
+
+#' Tables that load_synthea_data() can populate, for use with its `tables`
+#' argument. PROVIDERID values are stable across runs, so tables carrying a
+#' provider FK stay valid whether or not PROVIDER is reloaded with them.
+#' @export
+SYNTHEA_LOADABLE_TABLES <- c(
+  "EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src",
+  "DEMOGRAPHIC", "DEATH", "ENCOUNTER", "CONDITION", "DIAGNOSIS",
+  "PRESCRIBING", "PROCEDURES", "LAB_RESULT_CM", "VITAL", "OBS_CLIN",
+  "IMMUNIZATION", "ENROLLMENT", "DISPENSING", "PROVIDER"
+)
 
 #' Load encounter type mappings
 #' @keywords internal
@@ -79,16 +90,85 @@ if (map_file == "") {
   ifelse(is.na(result), NA, result)
 }
 
+#' Load the RxNorm to NDC crosswalk
+#'
+#' Synthea codes medications in RxNorm, but DISPENSING.NDC is NOT NULL, so a
+#' crosswalk is required. `synthea/mappings/rxnorm_ndc.csv` was built from the
+#' NLM RxNav API (`/REST/rxcui/{id}/ndcs.json`, falling back to
+#' `allhistoricalndcs.json` for retired products) and is checked in so loads are
+#' reproducible and need no network access.
+#' @keywords internal
+.load_rxnorm_ndc_map <- function() {
+  map_file <- system.file("synthea", "mappings", "rxnorm_ndc.csv",
+                          package = "pcornet.synthetic")
+  if (map_file == "") {
+    map_file <- file.path("synthea", "mappings", "rxnorm_ndc.csv")
+  }
+  if (file.exists(map_file)) {
+    read.csv(map_file, stringsAsFactors = FALSE,
+             colClasses = c(rxcui = "character", ndc = "character"))
+  } else {
+    data.frame(rxcui = character(), ndc = character(), ndc_source = character(),
+               stringsAsFactors = FALSE)
+  }
+}
+
+#' Pick one NDC per dispensing event from a CUI's candidates
+#'
+#' A clinical drug maps to many NDCs, one per manufacturer and package size, and
+#' Synthea gives nothing to choose between them. Rotating through the candidates
+#' mirrors a pharmacy switching between suppliers. `index` must vary across
+#' every dispensing row rather than restarting per prescription, or drugs whose
+#' prescriptions are mostly single-fill would only ever get the first NDC.
+#' Indexing by position keeps the choice reproducible across runs.
+#' @keywords internal
+.assign_ndc <- function(rxcui, ndc_map, index) {
+  candidates <- split(ndc_map$ndc, ndc_map$rxcui)
+  # unname throughout: subsetting a named vector by CUI carries the names into
+  # the result, which turns an otherwise plain character vector into a named one.
+  n_candidates <- unname(lengths(candidates)[rxcui])
+  first_of_cui <- match(rxcui, names(candidates))
+  offset <- (index %% n_candidates) + 1
+  starts <- c(0, cumsum(unname(lengths(candidates)))[-length(candidates)])
+  flat <- unlist(candidates, use.names = FALSE)
+  unname(flat[starts[first_of_cui] + offset])
+}
+
+#' Map Synthea encounter IDs onto the synthetic PROVIDER pool
+#'
+#' Synthea records the clinician on the encounter rather than on the individual
+#' clinical event. Going through unique() keeps a given Synthea clinician on the
+#' same PROVIDERID in every table that carries a provider FK.
+#' @keywords internal
+.map_encounter_provider <- function(synthea_encounter_ids, encounters, provider_ids) {
+  if (nrow(encounters) == 0) return(NA_character_)
+  synthea_provider <- encounters$PROVIDER[match(synthea_encounter_ids, encounters$Id)]
+  slot <- match(synthea_provider, unique(encounters$PROVIDER))
+  provider_ids[((slot - 1) %% length(provider_ids)) + 1]
+}
+
+#' Synthea findings for LOINC 72166-2 mapped to the PCORnet SMOKING valueset
+#' @keywords internal
+SYNTHEA_SMOKING_MAP <- c(
+  "Never smoked tobacco (finding)" = "04",  # Never smoker
+  "Ex-smoker (finding)"            = "03",  # Former smoker
+  "Smokes tobacco daily (finding)" = "01"   # Current every day smoker
+)
+
 #' Load and transform Synthea data to PCORnet CDM format
 #'
-#' Imports Synthea CSV output and converts it to PCORnet CDM format in DuckDB
-#' databases. This provides the most clinically realistic synthetic data as
-#' Synthea uses disease state models informed by CDC, NIH, and clinical research.
+#' Imports Synthea CSV output and converts it to PCORnet CDM format, writing
+#' directly to SQL Server databases.
 #'
 #' @param synthea_dir Path to Synthea output/csv directory containing patients.csv
 #'   and other Synthea output files (encounters.csv, conditions.csv, etc.)
-#' @param save_to_disk Whether to save databases to disk files (default: TRUE)
-#' @param output_dir Directory for output files (default: ".")
+#' @param con_cdw DBI connection to CDW SQL Server database
+#' @param con_mpi DBI connection to MPI SQL Server database
+#' @param overwrite If TRUE, overwrite existing tables (default: TRUE)
+#' @param batch_size Number of rows to write at a time (default: 10000)
+#' @param tables Character vector of tables to load; NULL (default) loads all.
+#'   See `SYNTHEA_LOADABLE_TABLES`. Source CSVs are read only when a requested
+#'   table needs them, so a single-table load skips the multi-gigabyte files.
 #' @return List with `$cdw` (CDW connection) and `$mpi` (MPI connection)
 #'
 #' @examples
@@ -96,13 +176,21 @@ if (map_file == "") {
 #' # Generate data with Synthea first:
 #' # java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true
 #'
-#' # Then import into PCORnet format
-#' dbs <- load_synthea_data("~/synthea/output/csv")
+#' # Then import into PCORnet format via create_pcornet_database
+#' dbs <- create_pcornet_database(
+#'   mode = "synthea",
+#'   synthea_dir = "~/synthea/output/csv",
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
+#' )
 #' DBI::dbListTables(dbs$cdw)
 #' }
 #'
 #' @export
-load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = ".") {
+load_synthea_data <- function(synthea_dir, con_cdw, con_mpi,
+                              overwrite = TRUE, batch_size = 10000,
+                              tables = NULL) {
 
   cat("Loading Synthea data from:", synthea_dir, "\n")
 
@@ -111,13 +199,21 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     stop("Synthea directory not found: ", synthea_dir)
   }
 
+  # `tables = NULL` loads everything; naming tables loads just those, which
+  # keeps a single-table refresh from rewriting the multi-million-row tables.
+  want <- function(...) is.null(tables) || any(c(...) %in% tables)
+  if (!is.null(tables)) {
+    unknown <- setdiff(tables, SYNTHEA_LOADABLE_TABLES)
+    if (length(unknown) > 0) {
+      stop("Unknown table(s): ", paste(unknown, collapse = ", "),
+           "\nLoadable tables: ", paste(SYNTHEA_LOADABLE_TABLES, collapse = ", "))
+    }
+    cat("Loading only:", paste(tables, collapse = ", "), "\n")
+  }
+
   # Load mapping tables
   enc_map <- .load_encounter_type_map()
   snomed_map <- .load_snomed_icd10_map()
-
-  # Create databases
-  con_cdw <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  con_mpi <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
   CURRENT_DATETIME <- Sys.time()
 
@@ -139,25 +235,34 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     error = function(e) { cat("  Warning: encounters.csv not found\n"); data.frame() }
   )
 
-  conditions <- tryCatch(
-    read.csv(file.path(synthea_dir, "conditions.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: conditions.csv not found\n"); data.frame() }
-  )
+  # Each source file is read only when a requested table needs it; several of
+  # them run to gigabytes.
+  read_synthea_csv <- function(filename, needed, ...) {
+    if (!needed) return(data.frame())
+    tryCatch(
+      read.csv(file.path(synthea_dir, filename), stringsAsFactors = FALSE, ...),
+      error = function(e) { cat("  Warning:", filename, "not found\n"); data.frame() }
+    )
+  }
 
-  medications <- tryCatch(
-    read.csv(file.path(synthea_dir, "medications.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: medications.csv not found\n"); data.frame() }
-  )
+  conditions <- read_synthea_csv("conditions.csv", want("CONDITION"))
+  medications <- read_synthea_csv("medications.csv", want("PRESCRIBING", "DISPENSING"))
+  procedures <- read_synthea_csv("procedures.csv", want("PROCEDURES"))
+  observations <- read_synthea_csv("observations.csv", want("LAB_RESULT_CM", "VITAL", "OBS_CLIN"))
 
-  procedures <- tryCatch(
-    read.csv(file.path(synthea_dir, "procedures.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: procedures.csv not found\n"); data.frame() }
-  )
+  # CODE holds CVX codes, which are zero-padded ("08", "03"). Reading them as
+  # character keeps the padding that numeric coercion would strip.
+  immunizations <- read_synthea_csv("immunizations.csv", want("IMMUNIZATION"),
+                                    colClasses = c(CODE = "character"))
 
-  observations <- tryCatch(
-    read.csv(file.path(synthea_dir, "observations.csv"), stringsAsFactors = FALSE),
-    error = function(e) { cat("  Warning: observations.csv not found\n"); data.frame() }
-  )
+  # claims.csv is the billing-context source for DIAGNOSIS. Problem-list
+  # entries come from conditions.csv and land in CONDITION instead.
+  claims <- read_synthea_csv("claims.csv", want("DIAGNOSIS"))
+
+  # Insurance coverage spans, and the payer names needed to tell an insured
+  # span from an uninsured one.
+  payer_transitions <- read_synthea_csv("payer_transitions.csv", want("ENROLLMENT"))
+  payers <- read_synthea_csv("payers.csv", want("ENROLLMENT"))
 
   # ============================================================================
   # Create ID mappings (Synthea UUID -> PCORnet format)
@@ -183,6 +288,10 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   } else {
     encounter_map <- data.frame(synthea_id = character(), encounterid = character())
   }
+
+  # Synthetic provider pool that the PROVIDER table is built from. Tables that
+  # carry a provider FK draw their IDs from here so the references resolve.
+  provider_ids <- paste0("PROV", sprintf("%06d", 1:500))
 
   # ============================================================================
   # MPI Database
@@ -213,7 +322,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   enterprise_records$FirstSdx <- substr(enterprise_records$First, 1, 4)
   enterprise_records$LastSdx <- substr(enterprise_records$Last, 1, 4)
 
-  DBI::dbWriteTable(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = TRUE)
+  if (want("EnterpriseRecords")) .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
 
   # EnterpriseRecords_Ext
   is_deceased <- !is.na(patients$DEATHDATE) & patients$DEATHDATE != ""
@@ -223,10 +332,10 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     MPIUpdateDTTM = CURRENT_DATETIME,
     CDM_PATID = patient_map$patid,
     EPIC_PAT_ID = paste0("EPIC", sprintf("%010d", sample(1:99999999, nrow(patients)))),
-    ALLSCRIPTS_PERSON_ID = NA,
-    MHH_COVID_PERSON = NA,
-    MHH_MRN = NA,
-    UTP_MRN = NA,
+    ALLSCRIPTS_PERSON_ID = NA_character_,
+    MHH_COVID_PERSON = NA_character_,
+    MHH_MRN = NA_character_,
+    UTP_MRN = NA_character_,
     EpicOnly = "N",
     CDM_SEX = enterprise_records$G,
     CDM_RACE = ifelse(patients$RACE == "white", "05",
@@ -242,7 +351,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     stringsAsFactors = FALSE
   )
 
-  DBI::dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
+  if (want("EnterpriseRecords_Ext")) .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
 
   # Mpi mapping table
   mpi <- data.frame(
@@ -252,7 +361,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     Organization = "SYNTHEA",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
+  if (want("Mpi")) .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
 
   # MPI_Src
   mpi_src <- data.frame(
@@ -261,9 +370,11 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     Description = "Synthea Synthetic Patient Generator",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)
+  if (want("MPI_Src")) .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
 
-  cat("  MPI database created\n")
+  if (want("EnterpriseRecords", "EnterpriseRecords_Ext", "Mpi", "MPI_Src")) {
+    cat("  MPI database created\n")
+  }
 
   # ============================================================================
   # CDW Database - DEMOGRAPHIC
@@ -274,10 +385,10 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   demographic <- data.frame(
     PATID = patient_map$patid,
     BIRTH_DATE = as.Date(patients$BIRTHDATE),
-    BIRTH_TIME = NA,
+    BIRTH_TIME = NA_character_,
     SEX = enterprise_records$G,
-    SEXUAL_ORIENTATION = NA,
-    GENDER_IDENTITY = NA,
+    SEXUAL_ORIENTATION = NA_character_,
+    GENDER_IDENTITY = NA_character_,
     HISPANIC = enterprise_ext$CDM_HISPANIC,
     RACE = enterprise_ext$CDM_RACE,
     PAT_PREF_LANGUAGE_SPOKEN = "eng",
@@ -298,37 +409,107 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     stringsAsFactors = FALSE
   )
 
-  DBI::dbWriteTable(con_cdw, "DEMOGRAPHIC", demographic, overwrite = TRUE)
-  cat("  DEMOGRAPHIC:", nrow(demographic), "records\n")
+  if (want("DEMOGRAPHIC")) {
+    .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
+    cat("  DEMOGRAPHIC:", nrow(demographic), "records\n")
+  }
 
   # ============================================================================
   # CDW Database - DEATH
   # ============================================================================
 
   deceased_patients <- patients[is_deceased, ]
-  if (nrow(deceased_patients) > 0) {
+  if (want("DEATH") && nrow(deceased_patients) > 0) {
     death_records <- data.frame(
       PATID = patient_map$patid[is_deceased],
       DEATH_DATE = as.Date(deceased_patients$DEATHDATE),
       DEATH_DATE_IMPUTE = "N",
       DEATH_SOURCE = "L",
-      DEATH_MATCH_CONFIDENCE = NA,
+      DEATH_MATCH_CONFIDENCE = NA_character_,
       GPC_FLAG = "Y",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
       UID = patient_map$uid[is_deceased],
-      MPI_LID = NA,
-      MPI_SRC = NA,
+      MPI_LID = NA_character_,
+      MPI_SRC = NA_character_,
       stringsAsFactors = FALSE
     )
-    DBI::dbWriteTable(con_cdw, "DEATH", death_records, overwrite = TRUE)
+    .write_table_batched(con_cdw, "DEATH", death_records, overwrite = overwrite, batch_size = batch_size)
     cat("  DEATH:", nrow(death_records), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - ENROLLMENT  (insurance coverage, from payer_transitions.csv)
+  # ============================================================================
+
+  if (want("ENROLLMENT") && nrow(payer_transitions) > 0) {
+    enr <- payer_transitions
+    enr$PATID <- patient_map$patid[match(enr$PATIENT, patient_map$synthea_id)]
+    enr$UID <- patient_map$uid[match(enr$PATIENT, patient_map$synthea_id)]
+    enr$start <- as.Date(substr(enr$START_DATE, 1, 10))
+    enr$end <- as.Date(substr(enr$END_DATE, 1, 10))
+
+    unresolved <- is.na(enr$PATID) | is.na(enr$start)
+    if (any(unresolved)) {
+      cat("  ENROLLMENT: dropping", sum(unresolved),
+          "spans with unresolved PATID or start date\n")
+      enr <- enr[!unresolved, ]
+    }
+
+    # ENR_BASIS = 'I' asserts the patient was enrolled in insurance, so spans
+    # where Synthea recorded no payer are not enrollment periods. The CDM has
+    # nowhere to carry the payer, so keeping them would read as insured.
+    if (nrow(payers) > 0) {
+      uninsured_ids <- payers$Id[payers$NAME == "NO_INSURANCE"]
+      n_uninsured <- sum(enr$PAYER %in% uninsured_ids)
+      if (n_uninsured > 0) {
+        cat("  ENROLLMENT: excluding", n_uninsured, "uninsured spans\n")
+        enr <- enr[!enr$PAYER %in% uninsured_ids, ]
+      }
+    }
+  } else {
+    enr <- data.frame()
+  }
+
+  if (nrow(enr) > 0) {
+    # Synthea emits one span per payer per year, so a patient on the same plan
+    # for a decade produces ten abutting rows. Collapse each unbroken run with
+    # the same payer into the single enrollment period it represents.
+    enr <- enr[order(enr$PATID, enr$PAYER, enr$start), ]
+    n <- nrow(enr)
+    starts_run <- c(TRUE,
+                    enr$PATID[-1] != enr$PATID[-n] |
+                    enr$PAYER[-1] != enr$PAYER[-n] |
+                    enr$start[-1] > enr$end[-n])
+    run_id <- cumsum(starts_run)
+    first_of_run <- which(starts_run)
+    # A later span in a run can end earlier than an earlier one, so take the
+    # run's latest end rather than the last row's.
+    run_end <- as.Date(tapply(as.numeric(enr$end), run_id, max), origin = "1970-01-01")
+
+    enrollment_df <- data.frame(
+      PATID = enr$PATID[first_of_run],
+      ENR_START_DATE = enr$start[first_of_run],
+      ENR_END_DATE = unname(run_end),
+      ENR_BASIS = "I",
+      CHART = NA_character_,
+      GPC_FLAG = "Y",
+      UID = enr$UID[first_of_run],
+      MPI_LID = NA_character_,
+      MPI_SRC = NA_character_,
+      stringsAsFactors = FALSE
+    )
+
+    cat("  ENROLLMENT: collapsed", n, "yearly spans into",
+        nrow(enrollment_df), "coverage periods\n")
+    .write_table_batched(con_cdw, "ENROLLMENT", enrollment_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  ENROLLMENT:", nrow(enrollment_df), "records\n")
   }
 
   # ============================================================================
   # CDW Database - ENCOUNTER
   # ============================================================================
 
-  if (nrow(encounters) > 0) {
+  if (want("ENCOUNTER") && nrow(encounters) > 0) {
     # Map patient IDs
     encounters$PATID <- patient_map$patid[match(encounters$PATIENT, patient_map$synthea_id)]
     encounters$UID <- patient_map$uid[match(encounters$PATIENT, patient_map$synthea_id)]
@@ -343,70 +524,148 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       DISCHARGE_TIME = substr(encounters$STOP, 12, 19),
       PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, nrow(encounters), replace = TRUE))),
       ENC_TYPE = .map_encounter_type(encounters$ENCOUNTERCLASS, enc_map),
-      FACILITY_LOCATION = NA,
-      FACILITYID = NA,
-      DISCHARGE_DISPOSITION = NA,
-      DISCHARGE_STATUS = NA,
-      DRG = NA,
-      DRG_TYPE = NA,
-      ADMITTING_SOURCE = NA,
+      FACILITY_LOCATION = NA_character_,
+      FACILITYID = NA_character_,
+      DISCHARGE_DISPOSITION = NA_character_,
+      DISCHARGE_STATUS = NA_character_,
+      DRG = NA_character_,
+      DRG_TYPE = NA_character_,
+      ADMITTING_SOURCE = NA_character_,
       RAW_ENC_TYPE = encounters$ENCOUNTERCLASS,
-      RAW_DISCHARGE_DISPOSITION = NA,
-      RAW_DISCHARGE_STATUS = NA,
-      PAYER_TYPE_PRIMARY = NA,
+      RAW_DISCHARGE_DISPOSITION = NA_character_,
+      RAW_DISCHARGE_STATUS = NA_character_,
+      PAYER_TYPE_PRIMARY = NA_character_,
       CDW_Source = "SYNTHEA",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
       GPC_FLAG = "Y",
       UID = encounters$UID,
-      MPI_SRC = NA,
-      MPI_LID = NA,
+      MPI_SRC = NA_character_,
+      MPI_LID = NA_character_,
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "ENCOUNTER", encounter_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "ENCOUNTER", encounter_df, overwrite = overwrite, batch_size = batch_size)
     cat("  ENCOUNTER:", nrow(encounter_df), "records\n")
   }
 
   # ============================================================================
-  # CDW Database - DIAGNOSIS
+  # CDW Database - CONDITION  (problem list, from conditions.csv)
   # ============================================================================
+  # PCORnet CDM v7.0, CONDITION guidance: "These records should NOT be
+  # duplicated in the DIAGNOSIS table." Synthea's conditions.csv is problem-list
+  # shaped (SNOMED-coded, with onset/abatement via START/STOP), so it maps here
+  # at full fidelity - CONDITION_TYPE = 'SM' is a first-class value, so no
+  # terminology crosswalk is required.
 
   if (nrow(conditions) > 0) {
-    conditions$PATID <- patient_map$patid[match(conditions$PATIENT, patient_map$synthea_id)]
-    conditions$UID <- patient_map$uid[match(conditions$PATIENT, patient_map$synthea_id)]
-    conditions$ENCOUNTERID <- encounter_map$encounterid[match(conditions$ENCOUNTER, encounter_map$synthea_id)]
+    cond_patid <- patient_map$patid[match(conditions$PATIENT, patient_map$synthea_id)]
+    cond_uid   <- patient_map$uid[match(conditions$PATIENT, patient_map$synthea_id)]
+    cond_encid <- encounter_map$encounterid[match(conditions$ENCOUNTER, encounter_map$synthea_id)]
 
-    # Map SNOMED to ICD-10
-    conditions$ICD10 <- .map_snomed_to_icd10(conditions$CODE, snomed_map)
+    cond_stop <- if ("STOP" %in% names(conditions)) trimws(as.character(conditions$STOP)) else ""
+    has_stop  <- !is.na(cond_stop) & nzchar(cond_stop)
 
-    diagnosis_df <- data.frame(
-      DIAGNOSISID = paste0("DX", sprintf("%010d", 1:nrow(conditions))),
-      PATID = conditions$PATID,
-      ENCOUNTERID = conditions$ENCOUNTERID,
-      ADMIT_DATE = as.Date(substr(conditions$START, 1, 10)),
-      DX = ifelse(!is.na(conditions$ICD10), conditions$ICD10, paste0("SNOMED:", conditions$CODE)),
-      DX_DATE = as.Date(substr(conditions$START, 1, 10)),
-      DX_TYPE = ifelse(!is.na(conditions$ICD10), "10", "SM"),
-      DX_SOURCE = "AD",
-      DX_ORIGIN = "OD",
-      DX_POA = NA,
-      ENC_TYPE = NA,
-      PDX = "P",
-      RAW_DX = conditions$DESCRIPTION,
-      RAW_DX_TYPE = "SNOMED-CT",
-      RAW_DX_SOURCE = "Synthea",
-      RAW_PDX = NA,
-      PROVIDERID = NA,
-      CDW_Source = "SYNTHEA",
+    cond_system <- if ("SYSTEM" %in% names(conditions)) {
+      as.character(conditions$SYSTEM)
+    } else {
+      "http://snomed.info/sct"
+    }
+
+    condition_df <- data.frame(
+      CONDITIONID  = paste0("COND", sprintf("%010d", seq_len(nrow(conditions)))),
+      PATID        = cond_patid,
+      ENCOUNTERID  = cond_encid,
+      REPORT_DATE  = as.Date(substr(conditions$START, 1, 10)),
+      RESOLVE_DATE = as.Date(ifelse(has_stop, substr(cond_stop, 1, 10), NA_character_)),
+      # Spec: ONSET_DATE "should only be provided where it exists in the source
+      # data. It is not calculated." Synthea's START is a recording date - 78.7%
+      # of rows share the date of their linked encounter - so it maps to
+      # REPORT_DATE. Deriving ONSET_DATE from it would fabricate the concept.
+      ONSET_DATE   = as.Date(NA),
+      CONDITION_STATUS = ifelse(has_stop, "RS", "AC"),
+      # Bare SNOMED code. The field is Text(18) and the longest observed code is
+      # 17 chars, so a "SNOMED:" prefix would overflow it.
+      CONDITION        = as.character(conditions$CODE),
+      CONDITION_TYPE   = "SM",
+      CONDITION_SOURCE = "HC",
+      RAW_CONDITION_STATUS = NA_character_,
+      RAW_CONDITION        = conditions$DESCRIPTION,
+      RAW_CONDITION_TYPE   = cond_system,
+      RAW_CONDITION_SOURCE = "Synthea conditions.csv",
+      CDW_Source      = "SYNTHEA",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
-      GPC_FLAG = "Y",
-      UID = conditions$UID,
-      SNOMED_CODE = conditions$CODE,
+      GPC_FLAG        = "Y",
+      UID             = cond_uid,
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = TRUE)
-    cat("  DIAGNOSIS:", nrow(diagnosis_df), "records\n")
+    .write_table_batched(con_cdw, "CONDITION", condition_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  CONDITION:", nrow(condition_df), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - DIAGNOSIS  (billing context, from claims.csv)
+  # ============================================================================
+  # PCORnet CDM v7.0, DIAGNOSIS guidance: this table captures diagnoses "with
+  # the exception of problem list entries... Diagnoses from problem lists will
+  # be captured in the CONDITION table." Synthea's claims.csv is the billing
+  # source: each claim carries up to 8 diagnosis references, where DIAGNOSIS1 is
+  # principal and DIAGNOSIS2-8 are secondary, which yields a real PDX value.
+
+  if (nrow(claims) > 0) {
+    dx_cols <- intersect(paste0("DIAGNOSIS", 1:8), names(claims))
+
+    # Pivot the DIAGNOSIS1..8 columns to one row per diagnosis, keeping the
+    # column position so principal vs secondary can be derived.
+    dx_long <- do.call(rbind, lapply(seq_along(dx_cols), function(i) {
+      v <- trimws(as.character(claims[[dx_cols[i]]]))
+      keep <- !is.na(v) & nzchar(v)
+      if (!any(keep)) return(NULL)
+      data.frame(
+        PATIENT   = claims$PATIENTID[keep],
+        ENCOUNTER = claims$APPOINTMENTID[keep],
+        SVCDATE   = claims$SERVICEDATE[keep],
+        CODE      = v[keep],
+        SEQ       = i,
+        stringsAsFactors = FALSE
+      )
+    }))
+
+    if (!is.null(dx_long) && nrow(dx_long) > 0) {
+      dx_icd10 <- .map_snomed_to_icd10(dx_long$CODE, snomed_map)
+      dx_mapped <- !is.na(dx_icd10)
+      dx_date <- as.Date(substr(dx_long$SVCDATE, 1, 10))
+
+      diagnosis_df <- data.frame(
+        DIAGNOSISID = paste0("DX", sprintf("%010d", seq_len(nrow(dx_long)))),
+        PATID       = patient_map$patid[match(dx_long$PATIENT, patient_map$synthea_id)],
+        ENCOUNTERID = encounter_map$encounterid[match(dx_long$ENCOUNTER, encounter_map$synthea_id)],
+        ADMIT_DATE  = dx_date,
+        # Bare code, never prefixed - DX is a fixed-width coded field.
+        DX          = ifelse(dx_mapped, dx_icd10, dx_long$CODE),
+        DX_DATE     = dx_date,
+        DX_TYPE     = ifelse(dx_mapped, "10", "SM"),
+        DX_SOURCE   = "FI",   # spec: ambulatory encounters expected to be Final
+        DX_ORIGIN   = "BI",   # provider-side billing, not payer claim fulfillment
+        DX_POA      = "NI",   # Synthea models no present-on-admission data
+        ENC_TYPE    = NA_character_,
+        PDX         = ifelse(dx_long$SEQ == 1, "P", "S"),
+        RAW_DX        = dx_long$CODE,
+        RAW_DX_TYPE   = "SNOMED-CT",
+        RAW_DX_SOURCE = "Synthea claims.csv",
+        RAW_PDX       = as.character(dx_long$SEQ),
+        PROVIDERID    = NA_character_,
+        CDW_Source      = "SYNTHEA",
+        CDW_UpdatedDTTM = CURRENT_DATETIME,
+        GPC_FLAG        = "Y",
+        UID         = patient_map$uid[match(dx_long$PATIENT, patient_map$synthea_id)],
+        SNOMED_CODE = dx_long$CODE,
+        stringsAsFactors = FALSE
+      )
+
+      .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis_df, overwrite = overwrite, batch_size = batch_size)
+      cat("  DIAGNOSIS:", nrow(diagnosis_df), "records\n")
+    }
   }
 
   # ============================================================================
@@ -417,37 +676,42 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     medications$PATID <- patient_map$patid[match(medications$PATIENT, patient_map$synthea_id)]
     medications$UID <- patient_map$uid[match(medications$PATIENT, patient_map$synthea_id)]
     medications$ENCOUNTERID <- encounter_map$encounterid[match(medications$ENCOUNTER, encounter_map$synthea_id)]
+    # Derived from row order, so DISPENSING resolves the same IDs whether or not
+    # PRESCRIBING is being written in this run.
+    medications$PRESCRIBINGID <- paste0("RX", sprintf("%010d", 1:nrow(medications)))
+  }
 
+  if (want("PRESCRIBING") && nrow(medications) > 0) {
     prescribing_df <- data.frame(
-      PRESCRIBINGID = paste0("RX", sprintf("%010d", 1:nrow(medications))),
+      PRESCRIBINGID = medications$PRESCRIBINGID,
       PATID = medications$PATID,
       ENCOUNTERID = medications$ENCOUNTERID,
       RX_PROVIDERID = paste0("PROV", sprintf("%06d", sample(1:500, nrow(medications), replace = TRUE))),
       RX_ORDER_DATE = as.Date(substr(medications$START, 1, 10)),
-      RX_ORDER_TIME = NA,
+      RX_ORDER_TIME = NA_character_,
       RX_START_DATE = as.Date(substr(medications$START, 1, 10)),
       RX_END_DATE = as.Date(substr(medications$STOP, 1, 10)),
-      RX_DAYS_SUPPLY = NA,
-      RX_REFILLS = NA,
-      RX_QUANTITY = NA,
-      RX_DOSE_ORDERED = NA,
-      RX_DOSE_ORDERED_UNIT = NA,
-      RX_DOSE_FORM = NA,
-      RX_FREQUENCY = NA,
-      RX_ROUTE = NA,
-      RX_BASIS = NA,
-      RX_PRN_FLAG = NA,
-      RX_DISPENSE_AS_WRITTEN = NA,
+      RX_DAYS_SUPPLY = NA_real_,
+      RX_REFILLS = NA_real_,
+      RX_QUANTITY = NA_real_,
+      RX_DOSE_ORDERED = NA_real_,
+      RX_DOSE_ORDERED_UNIT = NA_character_,
+      RX_DOSE_FORM = NA_character_,
+      RX_FREQUENCY = NA_character_,
+      RX_ROUTE = NA_character_,
+      RX_BASIS = NA_character_,
+      RX_PRN_FLAG = NA_character_,
+      RX_DISPENSE_AS_WRITTEN = NA_character_,
       RX_SOURCE = "OD",
       RXNORM_CUI = as.character(medications$CODE),
       RAW_RX_MED_NAME = medications$DESCRIPTION,
-      RAW_RX_FREQUENCY = NA,
-      RAW_RX_DOSE_ORDERED = NA,
-      RAW_RX_DOSE_ORDERED_UNIT = NA,
-      RAW_RX_ROUTE = NA,
-      RAW_RX_REFILLS = NA,
+      RAW_RX_FREQUENCY = NA_character_,
+      RAW_RX_DOSE_ORDERED = NA_character_,
+      RAW_RX_DOSE_ORDERED_UNIT = NA_character_,
+      RAW_RX_ROUTE = NA_character_,
+      RAW_RX_REFILLS = NA_character_,
       RAW_RXNORM_CUI = as.character(medications$CODE),
-      RAW_RX_NDC = NA,
+      RAW_RX_NDC = NA_character_,
       CDW_Source = "SYNTHEA",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
       GPC_FLAG = "Y",
@@ -455,8 +719,85 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "PRESCRIBING", prescribing_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "PRESCRIBING", prescribing_df, overwrite = overwrite, batch_size = batch_size)
     cat("  PRESCRIBING:", nrow(prescribing_df), "records\n")
+  }
+
+  # ============================================================================
+  # CDW Database - DISPENSING  (one row per fill, from medications.csv)
+  # ============================================================================
+
+  if (want("DISPENSING") && nrow(medications) > 0) {
+    ndc_map <- .load_rxnorm_ndc_map()
+    if (nrow(ndc_map) == 0) {
+      stop("DISPENSING needs synthea/mappings/rxnorm_ndc.csv: NDC is NOT NULL ",
+           "in the CDM and Synthea codes medications in RxNorm only.")
+    }
+
+    disp <- medications
+    disp$rxcui <- as.character(disp$CODE)
+    disp$start <- as.Date(substr(disp$START, 1, 10))
+
+    # NDC is NOT NULL, so a prescription whose RxCUI has no NDC cannot be
+    # represented at all. Dropping it beats inventing a code.
+    no_ndc <- !disp$rxcui %in% ndc_map$rxcui
+    unresolved <- is.na(disp$PATID) | is.na(disp$start)
+    if (any(no_ndc)) {
+      cat("  DISPENSING: dropping", sum(no_ndc), "prescriptions across",
+          length(unique(disp$rxcui[no_ndc])), "RxCUIs with no NDC mapping\n")
+    }
+    if (any(unresolved)) {
+      cat("  DISPENSING: dropping", sum(unresolved),
+          "prescriptions with unresolved PATID or start date\n")
+    }
+    disp <- disp[!no_ndc & !unresolved, ]
+  } else {
+    disp <- data.frame()
+  }
+
+  if (nrow(disp) > 0) {
+    # One row per prescription rather than per fill. Synthea reports how many
+    # times a prescription was dispensed but never when: it leaves STOP blank
+    # while a prescription is active and sets it equal to START for same-day
+    # courses, so roughly three quarters of fills have no span to spread over
+    # and would land stacked on the start date. A row per prescription keeps
+    # every DISPENSE_DATE a date the source actually recorded. The cost is that
+    # the fill count goes unrepresented, the CDM having no column for it.
+    total_fills <- sum(pmax(1, suppressWarnings(as.integer(disp$DISPENSES)), na.rm = TRUE))
+    cat("  DISPENSING: one row per prescription;",
+        format(total_fills, big.mark = ","), "recorded fills are not represented\n")
+
+    dispensing_df <- data.frame(
+      DISPENSINGID = paste0("DISP", sprintf("%010d", seq_len(nrow(disp)))),
+      PATID = disp$PATID,
+      PRESCRIBINGID = disp$PRESCRIBINGID,
+      # Index by row so a drug whose NDC list is long still rotates through it
+      # instead of every prescription drawing the same manufacturer.
+      NDC = .assign_ndc(disp$rxcui, ndc_map, seq_len(nrow(disp)) - 1L),
+      DISPENSE_DATE = disp$start,
+      # Synthea records no days supply, no quantity, and no dose or route.
+      # Deriving a supply from span/fills would be inference, not mapping, and
+      # produces absurdities for a prescription spanning years with one fill.
+      DISPENSE_SUP = NA_real_,
+      DISPENSE_AMT = NA_real_,
+      DISPENSE_DOSE_DISP = NA_real_,
+      DISPENSE_DOSE_DISP_UNIT = NA_character_,
+      DISPENSE_ROUTE = NA_character_,
+      DISPENSE_SOURCE = "OD",
+      RAW_NDC = NA_character_,
+      RAW_DISP_MED_NAME = disp$DESCRIPTION,
+      RAW_DISPENSE_DOSE_DISP = NA_character_,
+      RAW_DISPENSE_DOSE_DISP_UNIT = NA_character_,
+      RAW_DISPENSE_ROUTE = NA_character_,
+      CDW_Source = "SYNTHEA",
+      CDW_UpdatedDTTM = CURRENT_DATETIME,
+      GPC_FLAG = "Y",
+      UID = disp$UID,
+      stringsAsFactors = FALSE
+    )
+
+    .write_table_batched(con_cdw, "DISPENSING", dispensing_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  DISPENSING:", nrow(dispensing_df), "records\n")
   }
 
   # ============================================================================
@@ -481,11 +822,11 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       PX_TYPE = "SM",
       PX_SOURCE = "OD",
       PPX = "P",
-      ENC_TYPE = NA,
+      ENC_TYPE = NA_character_,
       RAW_PX = procedures$DESCRIPTION,
       RAW_PX_TYPE = "SNOMED-CT",
       RAW_PX_NAME = procedures$DESCRIPTION,
-      PROVIDERID = NA,
+      PROVIDERID = NA_character_,
       CDW_Source = "SYNTHEA",
       CDW_UpdatedDTTM = CURRENT_DATETIME,
       GPC_FLAG = "Y",
@@ -494,7 +835,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
       stringsAsFactors = FALSE
     )
 
-    DBI::dbWriteTable(con_cdw, "PROCEDURES", procedures_df, overwrite = TRUE)
+    .write_table_batched(con_cdw, "PROCEDURES", procedures_df, overwrite = overwrite, batch_size = batch_size)
     cat("  PROCEDURES:", nrow(procedures_df), "records\n")
   }
 
@@ -507,36 +848,58 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     observations$UID <- patient_map$uid[match(observations$PATIENT, patient_map$synthea_id)]
     observations$ENCOUNTERID <- encounter_map$encounterid[match(observations$ENCOUNTER, encounter_map$synthea_id)]
 
-    # Split into labs and vitals based on category or code
-    vital_codes <- c("8302-2", "29463-7", "39156-5", "8480-6", "8462-4", "8310-5")
+    # Exactly the codes VITAL has a column for. Selecting by code rather than
+    # category means a height still reaches VITAL whatever category Synthea
+    # filed it under. Body temperature (8310-5) is deliberately absent: PCORnet
+    # gives VITAL no column for it, so listing it here pulled temperature out of
+    # OBS_CLIN and then discarded the value, leaving behind a VITAL row with
+    # every measurement null.
+    vital_codes <- c("8302-2", "29463-7", "39156-5", "8480-6", "8462-4")
     is_vital <- observations$CODE %in% vital_codes
+    is_lab <- !is_vital & observations$CATEGORY == "laboratory"
+    # QALY, DALY and QOLS carry a blank category and are not LOINC. They score
+    # the simulation rather than describe the patient, so they enter no table.
+    is_simulation_metric <- observations$CATEGORY == ""
+    # OBS_CLIN takes every non-laboratory observation, the vital signs among
+    # them included. Height, weight, BMI and blood pressure therefore land in
+    # both OBS_CLIN and VITAL: the duplication is intended, because PCORnet is
+    # deprecating VITAL and OBS_CLIN is where these measures will live.
+    is_obs_clin <- !is_lab & !is_simulation_metric
+
+    if (any(is_simulation_metric)) {
+      cat("  observations: skipping", sum(is_simulation_metric),
+          "simulation metrics (QALY/DALY/QOLS)\n")
+    }
 
     # Labs
-    labs <- observations[!is_vital, ]
+    labs <- if (want("LAB_RESULT_CM")) observations[is_lab, ] else observations[0, ]
     if (nrow(labs) > 0) {
+      # Synthea types every value; only the numeric ones belong in RESULT_NUM,
+      # and the text ones would otherwise survive only in RAW_RESULT.
+      lab_is_numeric <- labs$TYPE == "numeric"
       lab_df <- data.frame(
         LAB_RESULT_CM_ID = paste0("LAB", sprintf("%010d", 1:nrow(labs))),
         PATID = labs$PATID,
         ENCOUNTERID = labs$ENCOUNTERID,
         LAB_LOINC = labs$CODE,
-        LAB_PX = NA,
-        LAB_PX_TYPE = NA,
+        LAB_PX = NA_character_,
+        LAB_PX_TYPE = NA_character_,
         LAB_ORDER_DATE = as.Date(substr(labs$DATE, 1, 10)),
         RESULT_DATE = as.Date(substr(labs$DATE, 1, 10)),
-        RESULT_TIME = NA,
-        RESULT_NUM = as.numeric(labs$VALUE),
-        RESULT_QUAL = NA,
-        RESULT_MODIFIER = NA,
+        RESULT_TIME = substr(labs$DATE, 12, 16),
+        RESULT_NUM = ifelse(lab_is_numeric, suppressWarnings(as.numeric(labs$VALUE)), NA_real_),
+        RESULT_QUAL = ifelse(lab_is_numeric, NA_character_, labs$VALUE),
+        RESULT_MODIFIER = NA_character_,
         RESULT_UNIT = labs$UNITS,
-        NORM_RANGE_LOW = NA,
-        NORM_RANGE_HIGH = NA,
-        NORM_MODIFIER_LOW = NA,
-        NORM_MODIFIER_HIGH = NA,
-        ABN_IND = NA,
-        SPECIMEN_SOURCE = NA,
-        SPECIMEN_DATE = NA,
-        PRIORITY = NA,
-        RESULT_LOC = NA,
+        NORM_RANGE_LOW = NA_character_,
+        NORM_RANGE_HIGH = NA_character_,
+        NORM_MODIFIER_LOW = NA_character_,
+        NORM_MODIFIER_HIGH = NA_character_,
+        ABN_IND = NA_character_,
+        SPECIMEN_SOURCE = NA_character_,
+        SPECIMEN_DATE = as.Date(NA),
+        PRIORITY = NA_character_,
+        RESULT_LOC = NA_character_,
         LAB_LOINC_SOURCE = "OD",
         LAB_RESULT_SOURCE = "OD",
         RAW_LAB_NAME = labs$DESCRIPTION,
@@ -550,12 +913,12 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
         stringsAsFactors = FALSE
       )
 
-      DBI::dbWriteTable(con_cdw, "LAB_RESULT_CM", lab_df, overwrite = TRUE)
+      .write_table_batched(con_cdw, "LAB_RESULT_CM", lab_df, overwrite = overwrite, batch_size = batch_size)
       cat("  LAB_RESULT_CM:", nrow(lab_df), "records\n")
     }
 
     # Vitals - aggregate by encounter
-    vitals <- observations[is_vital, ]
+    vitals <- if (want("VITAL")) observations[is_vital, ] else observations[0, ]
     if (nrow(vitals) > 0) {
       # Pivot vitals by encounter
       vital_wide <- vitals %>%
@@ -567,28 +930,46 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
           values_fn = function(x) as.numeric(x[1])
         )
 
+      # Smoking status is a separate observation (LOINC 72166-2) recorded at the
+      # same encounter and instant, so it joins onto the pivoted vitals rather
+      # than creating rows of its own. It is also kept in OBS_CLIN as a LOINC
+      # observation in its own right.
+      smoking_obs <- observations[observations$CODE == "72166-2", ]
+      smoking_key <- paste(smoking_obs$ENCOUNTERID, smoking_obs$DATE)
+      vital_key <- paste(vital_wide$ENCOUNTERID, vital_wide$DATE)
+      smoking_raw <- smoking_obs$VALUE[match(vital_key, smoking_key)]
+      smoking_code <- unname(SYNTHEA_SMOKING_MAP[smoking_raw])
+
+      unmapped <- unique(smoking_raw[!is.na(smoking_raw) & is.na(smoking_code)])
+      if (length(unmapped) > 0) {
+        cat("  VITAL: no SMOKING mapping for", length(unmapped), "finding(s):",
+            paste(unmapped, collapse = "; "), "\n")
+      }
+
       vital_df <- data.frame(
         VITALID = paste0("VIT", sprintf("%010d", 1:nrow(vital_wide))),
         PATID = vital_wide$PATID,
         ENCOUNTERID = vital_wide$ENCOUNTERID,
         MEASURE_DATE = as.Date(substr(vital_wide$DATE, 1, 10)),
-        MEASURE_TIME = NA,
+        MEASURE_TIME = substr(vital_wide$DATE, 12, 16),
         VITAL_SOURCE = "HC",
         HT = if ("8302-2" %in% names(vital_wide)) vital_wide$`8302-2` else NA,
         WT = if ("29463-7" %in% names(vital_wide)) vital_wide$`29463-7` else NA,
         ORIGINAL_BMI = if ("39156-5" %in% names(vital_wide)) vital_wide$`39156-5` else NA,
         SYSTOLIC = if ("8480-6" %in% names(vital_wide)) vital_wide$`8480-6` else NA,
         DIASTOLIC = if ("8462-4" %in% names(vital_wide)) vital_wide$`8462-4` else NA,
-        BP_POSITION = NA,
-        SMOKING = NA,
-        TOBACCO = NA,
-        TOBACCO_TYPE = NA,
-        RAW_SYSTOLIC = NA,
-        RAW_DIASTOLIC = NA,
-        RAW_BP_POSITION = NA,
-        RAW_SMOKING = NA,
-        RAW_TOBACCO = NA,
-        RAW_TOBACCO_TYPE = NA,
+        BP_POSITION = NA_character_,
+        SMOKING = smoking_code,
+        # Synthea reports smoking only, which says nothing about smokeless
+        # tobacco, so the broader TOBACCO fields stay unknown.
+        TOBACCO = NA_character_,
+        TOBACCO_TYPE = NA_character_,
+        RAW_SYSTOLIC = NA_character_,
+        RAW_DIASTOLIC = NA_character_,
+        RAW_BP_POSITION = NA_character_,
+        RAW_SMOKING = smoking_raw,
+        RAW_TOBACCO = NA_character_,
+        RAW_TOBACCO_TYPE = NA_character_,
         CDW_Source = "SYNTHEA",
         CDW_UpdatedDTTM = CURRENT_DATETIME,
         GPC_FLAG = "Y",
@@ -596,9 +977,129 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
         stringsAsFactors = FALSE
       )
 
-      DBI::dbWriteTable(con_cdw, "VITAL", vital_df, overwrite = TRUE)
+      .write_table_batched(con_cdw, "VITAL", vital_df, overwrite = overwrite, batch_size = batch_size)
       cat("  VITAL:", nrow(vital_df), "records\n")
+      cat("    SMOKING populated on", sum(!is.na(vital_df$SMOKING)), "rows\n")
     }
+
+    # Clinical observations: everything Synthea records that is not a lab
+    # result. That covers body temperature, heart rate, respiratory rate,
+    # oxygen saturation and pain scores, which have no VITAL column at all, as
+    # well as the measures VITAL does carry, which are written to both tables.
+    obs_clin <- if (want("OBS_CLIN")) observations[is_obs_clin, ] else observations[0, ]
+    if (nrow(obs_clin) > 0) {
+      obs_is_numeric <- obs_clin$TYPE == "numeric"
+      obs_start_date <- as.Date(substr(obs_clin$DATE, 1, 10))
+
+      obs_clin_df <- data.frame(
+        OBSCLINID = paste0("OBSC", sprintf("%010d", 1:nrow(obs_clin))),
+        PATID = obs_clin$PATID,
+        ENCOUNTERID = obs_clin$ENCOUNTERID,
+        OBSCLIN_PROVIDERID = .map_encounter_provider(obs_clin$ENCOUNTER, encounters, provider_ids),
+        OBSCLIN_START_DATE = obs_start_date,
+        OBSCLIN_START_TIME = substr(obs_clin$DATE, 12, 16),
+        # Synthea observations are instantaneous, so there is no stop.
+        OBSCLIN_STOP_DATE = as.Date(NA),
+        OBSCLIN_STOP_TIME = NA_character_,
+        OBSCLIN_TYPE = "LC",
+        OBSCLIN_CODE = obs_clin$CODE,
+        OBSCLIN_RESULT_NUM = ifelse(obs_is_numeric, suppressWarnings(as.numeric(obs_clin$VALUE)), NA_real_),
+        OBSCLIN_RESULT_UNIT = ifelse(obs_clin$UNITS == "", NA_character_, obs_clin$UNITS),
+        OBSCLIN_RESULT_TEXT = ifelse(obs_is_numeric, NA_character_, obs_clin$VALUE),
+        OBSCLIN_RESULT_QUAL = NA_character_,
+        OBSCLIN_RESULT_SNOMED = NA_character_,
+        OBSCLIN_RESULT_MODIFIER = NA_character_,
+        OBSCLIN_ABN_IND = NA_character_,
+        # Survey responses come from the patient; the rest are recorded in the
+        # care setting.
+        OBSCLIN_SOURCE = ifelse(obs_clin$CATEGORY == "survey", "PR", "HC"),
+        RAW_OBSCLIN_CODE = obs_clin$CODE,
+        RAW_OBSCLIN_TYPE = "LOINC",
+        RAW_OBSCLIN_NAME = obs_clin$DESCRIPTION,
+        RAW_OBSCLIN_RESULT = obs_clin$VALUE,
+        RAW_OBSCLIN_UNIT = obs_clin$UNITS,
+        RAW_OBSCLIN_MODIFIER = NA_character_,
+        RAW_ENCOUNTERID = obs_clin$ENCOUNTER,
+        CDW_Source = "SYNTHEA",
+        CDW_UpdatedDTTM = CURRENT_DATETIME,
+        GPC_FLAG = "Y",
+        UID = obs_clin$UID,
+        stringsAsFactors = FALSE
+      )
+
+      .write_table_batched(con_cdw, "OBS_CLIN", obs_clin_df, overwrite = overwrite, batch_size = batch_size)
+      cat("  OBS_CLIN:", nrow(obs_clin_df), "records\n")
+    }
+  }
+
+  # ============================================================================
+  # CDW Database - IMMUNIZATION
+  # ============================================================================
+
+  if (nrow(immunizations) > 0) {
+    immunizations$PATID <- patient_map$patid[match(immunizations$PATIENT, patient_map$synthea_id)]
+    immunizations$UID <- patient_map$uid[match(immunizations$PATIENT, patient_map$synthea_id)]
+    immunizations$ENCOUNTERID <- encounter_map$encounterid[match(immunizations$ENCOUNTER, encounter_map$synthea_id)]
+
+    # PATID and ENCOUNTERID are NOT NULL in the CDM, so drop any dose whose
+    # patient or encounter did not resolve rather than writing a broken FK.
+    unresolved <- is.na(immunizations$PATID) | is.na(immunizations$ENCOUNTERID)
+    if (any(unresolved)) {
+      cat("  IMMUNIZATION: dropping", sum(unresolved), "doses with unresolved PATID/ENCOUNTERID\n")
+      immunizations <- immunizations[!unresolved, ]
+    }
+  }
+
+  if (nrow(immunizations) > 0) {
+    # Synthea records the administering clinician on the encounter, not on the
+    # dose. Map each Synthea provider onto the synthetic pool so the same
+    # clinician always resolves to the same PROVIDERID.
+    vx_providerid <- .map_encounter_provider(immunizations$ENCOUNTER, encounters, provider_ids)
+
+    vx_admin_date <- as.Date(substr(immunizations$DATE, 1, 10))
+
+    immunization_df <- data.frame(
+      IMMUNIZATIONID = paste0("IMM", sprintf("%010d", 1:nrow(immunizations))),
+      PATID = immunizations$PATID,
+      ENCOUNTERID = immunizations$ENCOUNTERID,
+      PROCEDURESID = NA_character_,
+      VX_PROVIDERID = vx_providerid,
+      VX_RECORD_DATE = vx_admin_date,
+      VX_ADMIN_DATE = vx_admin_date,
+      # Synthea emits CVX codes and only records doses that were given.
+      VX_CODE = immunizations$CODE,
+      VX_CODE_TYPE = "CX",
+      VX_STATUS = "CP",
+      VX_STATUS_REASON = NA_character_,
+      VX_SOURCE = "OD",
+      # Not modelled by Synthea.
+      VX_DOSE = NA_real_,
+      VX_DOSE_UNIT = NA_character_,
+      VX_ROUTE = NA_character_,
+      VX_BODY_SITE = NA_character_,
+      VX_LOT_NUM = NA_character_,
+      VX_MANUFACTURER = NA_character_,
+      VX_EXP_DATE = as.Date(NA),
+      RAW_VX_CODE = immunizations$CODE,
+      RAW_VX_CODE_TYPE = "CVX",
+      RAW_VX_NAME = immunizations$DESCRIPTION,
+      RAW_VX_STATUS = "completed",
+      RAW_VX_STATUS_REASON = NA_character_,
+      RAW_VX_DOSE = NA_character_,
+      RAW_VX_DOSE_UNIT = NA_character_,
+      RAW_VX_ROUTE = NA_character_,
+      RAW_VX_BODY_SITE = NA_character_,
+      RAW_VX_MANUFACTURER = NA_character_,
+      RAW_ENCOUNTERID = immunizations$ENCOUNTER,
+      CDW_Source = "SYNTHEA",
+      CDW_UpdatedDTTM = CURRENT_DATETIME,
+      GPC_FLAG = "Y",
+      UID = immunizations$UID,
+      stringsAsFactors = FALSE
+    )
+
+    .write_table_batched(con_cdw, "IMMUNIZATION", immunization_df, overwrite = overwrite, batch_size = batch_size)
+    cat("  IMMUNIZATION:", nrow(immunization_df), "records\n")
   }
 
   # ============================================================================
@@ -606,7 +1107,7 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
   # ============================================================================
 
   providers <- data.frame(
-    PROVIDERID = paste0("PROV", sprintf("%06d", 1:500)),
+    PROVIDERID = provider_ids,
     ProviderName = paste("Dr.", paste0(sample(LETTERS, 500, replace = TRUE),
                                        sapply(1:500, function(x) paste(sample(letters, 5), collapse = "")))),
     PROVIDER_SPECIALTY_PRIMARY = sample(c("Internal Medicine", "Family Medicine", "Cardiology",
@@ -615,41 +1116,26 @@ load_synthea_data <- function(synthea_dir, save_to_disk = TRUE, output_dir = "."
     GPC_FLAG = "Y",
     stringsAsFactors = FALSE
   )
-  DBI::dbWriteTable(con_cdw, "PROVIDER", providers, overwrite = TRUE)
+  if (want("PROVIDER")) .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
 
   # ============================================================================
-  # Summary and Save
+  # Summary
   # ============================================================================
 
   cat("\n=== Synthea to PCORnet Conversion Complete ===\n")
   cat("CDW Tables:\n")
-  for (tbl in DBI::dbListTables(con_cdw)) {
-    count <- DBI::dbGetQuery(con_cdw, paste("SELECT COUNT(*) FROM", tbl))[[1]]
+  # dbListTables() also returns system objects outside dbo, which are not
+  # queryable unqualified. Restrict to user tables in the dbo schema.
+  user_tables <- DBI::dbGetQuery(con_cdw, paste(
+    "SELECT t.name FROM sys.tables t",
+    "JOIN sys.schemas s ON s.schema_id = t.schema_id",
+    "WHERE s.name = 'dbo' ORDER BY t.name"))$name
+  for (tbl in user_tables) {
+    count <- DBI::dbGetQuery(con_cdw, sprintf("SELECT COUNT(*) FROM dbo.[%s]", tbl))[[1]]
     cat(sprintf("  %s: %d records\n", tbl, count))
   }
 
-  if (save_to_disk) {
-    cat("\nSaving databases to disk...\n")
-    cdw_path <- file.path(output_dir, "pcornet_cdw.duckdb")
-    mpi_path <- file.path(output_dir, "mpi.duckdb")
-
-    con_cdw_disk <- DBI::dbConnect(duckdb::duckdb(), dbdir = cdw_path)
-    con_mpi_disk <- DBI::dbConnect(duckdb::duckdb(), dbdir = mpi_path)
-
-    for (table in DBI::dbListTables(con_cdw)) {
-      DBI::dbWriteTable(con_cdw_disk, table, DBI::dbReadTable(con_cdw, table), overwrite = TRUE)
-    }
-    for (table in DBI::dbListTables(con_mpi)) {
-      DBI::dbWriteTable(con_mpi_disk, table, DBI::dbReadTable(con_mpi, table), overwrite = TRUE)
-    }
-
-    DBI::dbDisconnect(con_cdw_disk, shutdown = TRUE)
-    DBI::dbDisconnect(con_mpi_disk, shutdown = TRUE)
-
-    cat("Databases saved to:\n")
-    cat("  ", cdw_path, "\n")
-    cat("  ", mpi_path, "\n")
-  }
+  cat("\nData written to SQL Server.\n")
 
   list(cdw = con_cdw, mpi = con_mpi)
 }

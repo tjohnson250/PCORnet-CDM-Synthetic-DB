@@ -2,7 +2,7 @@
 #' @description Function-based API for generating synthetic PCORnet CDM and MPI databases
 #'
 #' @import DBI
-#' @import duckdb
+#' @import odbc
 #' @import dplyr
 #' @import lubridate
 #' @keywords internal
@@ -24,38 +24,70 @@ DEFAULT_SOURCES <- list(
 #' Create PCORnet CDM Synthetic Database
 #'
 #' Generates synthetic patient data following PCORnet CDM schema with optional
-#' clinical coherence using patient profiles.
+#' clinical coherence using patient profiles. Writes directly to SQL Server.
 #'
 #' @param n_patients Number of synthetic patients to generate (default: 100)
 #' @param mode Generation mode: "enhanced" (clinical profiles), "random", or "synthea"
 #' @param current_date Reference date for data generation (default: Sys.Date())
 #' @param seed Random seed for reproducibility (default: 42)
-#' @param save_to_disk Save databases to disk files (default: TRUE)
-#' @param output_dir Directory for output files (default: ".")
+#' @param server SQL Server hostname (e.g., "localhost" or "server.database.windows.net")
+#' @param cdw_database Database name for the Clinical Data Warehouse (default: "PCORnet_CDW")
+#' @param mpi_database Database name for the Master Patient Index (default: "MPI")
+#' @param uid Username for SQL Server authentication
+#' @param pwd Password for SQL Server authentication
+#' @param driver ODBC driver name (default: "ODBC Driver 18 for SQL Server")
+#' @param port SQL Server port (default: 1433)
+#' @param schema Target schema for tables (default: "dbo")
+#' @param trusted_connection Use Windows integrated authentication instead of uid/pwd
+#'   (default: FALSE)
+#' @param connection_string Optional full ODBC connection string for CDW database.
+#'   If provided, overrides server/cdw_database/uid/pwd/driver/port parameters.
+#' @param mpi_connection_string Optional full ODBC connection string for MPI database.
+#'   If provided, overrides server/mpi_database/uid/pwd/driver/port parameters.
+#' @param overwrite If TRUE, overwrite existing tables (default: TRUE)
+#' @param batch_size Number of rows to write at a time for large tables (default: 10000)
 #' @param synthea_dir Path to Synthea CSV output (required when mode = "synthea")
+#' @param tables Character vector of tables to load when mode = "synthea";
+#'   NULL (default) loads all of them. See `SYNTHEA_LOADABLE_TABLES`.
 #' @param profile_weights Named list to override default profile distribution
 #' @param sources Named list of source systems for MPI. Each source should have
 #'   id_field, description, and null_rate. Use DEFAULT_SOURCES as a template.
 #'
 #' @return List with:
-#'   \item{cdw}{DBI connection to Clinical Data Warehouse}
-#'   \item{mpi}{DBI connection to Master Patient Index}
+#'   \item{cdw}{DBI connection to Clinical Data Warehouse on SQL Server}
+#'   \item{mpi}{DBI connection to Master Patient Index on SQL Server}
 #'   \item{summary}{Generation statistics}
 #'
 #' @examples
 #' \dontrun{
-#' # Basic usage
-#' dbs <- create_pcornet_database()
+#' # Basic usage with SQL Server authentication
+#' dbs <- create_pcornet_database(
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
+#' )
 #'
-#' # Custom patient count
-#' dbs <- create_pcornet_database(n_patients = 5000)
+#' # Custom patient count with Windows authentication
+#' dbs <- create_pcornet_database(
+#'   n_patients = 5000,
+#'   server = "localhost",
+#'   trusted_connection = TRUE
+#' )
 #'
 #' # Random mode (no clinical coherence)
-#' dbs <- create_pcornet_database(mode = "random")
+#' dbs <- create_pcornet_database(
+#'   mode = "random",
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
+#' )
 #'
 #' # Custom profile distribution
 #' dbs <- create_pcornet_database(
-#'   profile_weights = list(diabetic = 0.3, healthy = 0.7)
+#'   profile_weights = list(diabetic = 0.3, healthy = 0.7),
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
 #' )
 #'
 #' # Custom source systems
@@ -63,7 +95,10 @@ DEFAULT_SOURCES <- list(
 #'   sources = list(
 #'     EPIC = list(id_field = "EPIC_PAT_ID", description = "Epic EHR", null_rate = 0.1),
 #'     CERNER = list(id_field = "CERNER_ID", description = "Cerner EHR", null_rate = 0.3)
-#'   )
+#'   ),
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
 #' )
 #' }
 #'
@@ -73,9 +108,21 @@ create_pcornet_database <- function(
     mode = c("enhanced", "random", "synthea"),
     current_date = Sys.Date(),
     seed = 42,
-    save_to_disk = TRUE,
-    output_dir = ".",
+    server = "localhost",
+    cdw_database = "PCORnet_CDW",
+    mpi_database = "MPI",
+    uid = NULL,
+    pwd = NULL,
+    driver = "ODBC Driver 18 for SQL Server",
+    port = 1433,
+    schema = "dbo",
+    trusted_connection = FALSE,
+    connection_string = NULL,
+    mpi_connection_string = NULL,
+    overwrite = TRUE,
+    batch_size = 10000,
     synthea_dir = NULL,
+    tables = NULL,
     profile_weights = NULL,
     sources = NULL
 ) {
@@ -103,13 +150,28 @@ create_pcornet_database <- function(
     sources <- DEFAULT_SOURCES
   }
 
+  # Create SQL Server connections
+  con_cdw <- .connect_sql_server(
+    server = server, database = cdw_database, uid = uid, pwd = pwd,
+    driver = driver, port = port, trusted_connection = trusted_connection,
+    connection_string = connection_string
+  )
+  cat("Connected to CDW database:", cdw_database, "on", server, "\n")
+
+  con_mpi <- .connect_sql_server(
+    server = server, database = mpi_database, uid = uid, pwd = pwd,
+    driver = driver, port = port, trusted_connection = trusted_connection,
+    connection_string = mpi_connection_string
+  )
+  cat("Connected to MPI database:", mpi_database, "on", server, "\n\n")
+
   # Dispatch to appropriate generator
   if (mode == "synthea") {
-    result <- .generate_from_synthea(synthea_dir, save_to_disk, output_dir)
+    result <- .generate_from_synthea(synthea_dir, con_cdw, con_mpi, overwrite, batch_size, tables)
   } else if (mode == "enhanced") {
-    result <- .generate_enhanced(n_patients, current_date, profile_weights, save_to_disk, output_dir, sources)
+    result <- .generate_enhanced(n_patients, current_date, profile_weights, con_cdw, con_mpi, overwrite, batch_size, sources)
   } else {
-    result <- .generate_random(n_patients, current_date, save_to_disk, output_dir, sources)
+    result <- .generate_random(n_patients, current_date, con_cdw, con_mpi, overwrite, batch_size, sources)
   }
 
   # Add metadata
@@ -122,37 +184,59 @@ create_pcornet_database <- function(
 
 #' Load Existing PCORnet Databases
 #'
-#' Connects to previously generated PCORnet CDM and MPI database files.
+#' Connects to existing PCORnet CDM and MPI databases on SQL Server.
 #'
-#' @param cdw_path Path to CDW database file (default: "pcornet_cdw.duckdb")
-#' @param mpi_path Path to MPI database file (default: "mpi.duckdb")
+#' @param server SQL Server hostname
+#' @param cdw_database Database name for the Clinical Data Warehouse (default: "PCORnet_CDW")
+#' @param mpi_database Database name for the Master Patient Index (default: "MPI")
+#' @param uid Username for SQL Server authentication
+#' @param pwd Password for SQL Server authentication
+#' @param driver ODBC driver name (default: "ODBC Driver 18 for SQL Server")
+#' @param port SQL Server port (default: 1433)
+#' @param trusted_connection Use Windows integrated authentication (default: FALSE)
+#' @param connection_string Optional full ODBC connection string for CDW database
+#' @param mpi_connection_string Optional full ODBC connection string for MPI database
 #'
 #' @return List with cdw and mpi connections
 #'
 #' @examples
 #' \dontrun{
-#' dbs <- load_pcornet_database()
+#' dbs <- load_pcornet_database(
+#'   server = "localhost",
+#'   uid = "sa",
+#'   pwd = "YourPassword123"
+#' )
 #' dbListTables(dbs$cdw)
 #' }
 #'
 #' @export
 load_pcornet_database <- function(
-    cdw_path = "pcornet_cdw.duckdb",
-    mpi_path = "mpi.duckdb"
+    server = "localhost",
+    cdw_database = "PCORnet_CDW",
+    mpi_database = "MPI",
+    uid = NULL,
+    pwd = NULL,
+    driver = "ODBC Driver 18 for SQL Server",
+    port = 1433,
+    trusted_connection = FALSE,
+    connection_string = NULL,
+    mpi_connection_string = NULL
 ) {
-  if (!file.exists(cdw_path)) {
-    stop("CDW database not found: ", cdw_path)
-  }
-  if (!file.exists(mpi_path)) {
-    stop("MPI database not found: ", mpi_path)
-  }
+  con_cdw <- .connect_sql_server(
+    server = server, database = cdw_database, uid = uid, pwd = pwd,
+    driver = driver, port = port, trusted_connection = trusted_connection,
+    connection_string = connection_string
+  )
 
-  con_cdw <- dbConnect(duckdb::duckdb(), dbdir = cdw_path, read_only = TRUE)
-  con_mpi <- dbConnect(duckdb::duckdb(), dbdir = mpi_path, read_only = TRUE)
+  con_mpi <- .connect_sql_server(
+    server = server, database = mpi_database, uid = uid, pwd = pwd,
+    driver = driver, port = port, trusted_connection = trusted_connection,
+    connection_string = mpi_connection_string
+  )
 
-  cat("Loaded databases:\n")
-  cat("  CDW:", cdw_path, "\n")
-  cat("  MPI:", mpi_path, "\n")
+  cat("Connected to databases:\n")
+  cat("  CDW:", cdw_database, "on", server, "\n")
+  cat("  MPI:", mpi_database, "on", server, "\n")
 
   list(cdw = con_cdw, mpi = con_mpi)
 }
@@ -217,6 +301,56 @@ print.pcornet_summary <- function(x, ...) {
 # HELPER FUNCTIONS
 # =============================================================================
 
+.connect_sql_server <- function(server, database, uid = NULL, pwd = NULL,
+                                driver = "ODBC Driver 18 for SQL Server",
+                                port = 1433, trusted_connection = FALSE,
+                                connection_string = NULL) {
+  if (is.null(connection_string)) {
+    if (!trusted_connection && (is.null(uid) || is.null(pwd))) {
+      stop("Either provide uid/pwd, set trusted_connection = TRUE, or provide connection_string")
+    }
+    if (trusted_connection) {
+      connection_string <- sprintf(
+        "Driver={%s};Server=%s,%d;Database=%s;Trusted_Connection=yes;TrustServerCertificate=yes;",
+        driver, server, port, database
+      )
+    } else {
+      connection_string <- sprintf(
+        "Driver={%s};Server=%s,%d;Database=%s;Uid=%s;Pwd=%s;TrustServerCertificate=yes;",
+        driver, server, port, database, uid, pwd
+      )
+    }
+  }
+
+  tryCatch({
+    DBI::dbConnect(odbc::odbc(), .connection_string = connection_string)
+  }, error = function(e) {
+    stop("Failed to connect to SQL Server (", database, "): ", e$message, "\n",
+         "Make sure the ODBC driver is installed and connection parameters are correct.")
+  })
+}
+
+.write_table_batched <- function(con, table_name, data, overwrite = TRUE, batch_size = 10000) {
+  n_rows <- nrow(data)
+  if (n_rows == 0) return(invisible(NULL))
+
+  table_id <- DBI::Id(schema = "dbo", table = table_name)
+
+  if (overwrite) {
+    tryCatch(DBI::dbRemoveTable(con, table_id), error = function(e) NULL)
+  }
+
+  if (n_rows <= batch_size) {
+    DBI::dbWriteTable(con, table_id, data, overwrite = FALSE, append = FALSE)
+  } else {
+    DBI::dbWriteTable(con, table_id, data[1:batch_size, ], overwrite = FALSE, append = FALSE)
+    for (i in seq(batch_size + 1, n_rows, by = batch_size)) {
+      end_row <- min(i + batch_size - 1, n_rows)
+      DBI::dbAppendTable(con, table_id, data[i:end_row, ])
+    }
+  }
+}
+
 .random_date <- function(n, start_date, end_date) {
   start <- as.numeric(start_date)
   end <- as.numeric(end_date)
@@ -245,14 +379,10 @@ print.pcornet_summary <- function(x, ...) {
 # RANDOM GENERATION (mode = "random")
 # =============================================================================
 
-.generate_random <- function(n_patients, current_date, save_to_disk, output_dir, sources) {
+.generate_random <- function(n_patients, current_date, con_cdw, con_mpi, overwrite, batch_size, sources) {
   cat("Generating random synthetic data for", n_patients, "patients...\n")
 
   CURRENT_DATETIME <- as.POSIXct(paste(current_date, "12:00:00"), tz = "UTC")
-
-  # Create in-memory databases
-  con_cdw <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  con_mpi <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
   # Use PATID format for UIDs to match production schema where UID = CDM_PATID
   uids <- paste0("PAT", sprintf("%07d", 1:n_patients))
@@ -286,7 +416,7 @@ print.pcornet_summary <- function(x, ...) {
   enterprise_records$FirstSdx <- substr(enterprise_records$First, 1, 4)
   enterprise_records$LastSdx <- substr(enterprise_records$Last, 1, 4)
 
-  dbWriteTable(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
 
   enterprise_ext <- data.frame(
     Uid = uids,
@@ -324,7 +454,7 @@ print.pcornet_summary <- function(x, ...) {
     )
   }
 
-  dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
 
   # MPI mappings - uids_in_system is now VARCHAR (PATID format)
   source_names <- names(sources)
@@ -342,7 +472,7 @@ print.pcornet_summary <- function(x, ...) {
   }
   mpi <- do.call(rbind, mpi_records)
   rownames(mpi) <- NULL
-  dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
+  .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
 
   mpi_src <- data.frame(
     SRC = source_names,
@@ -350,7 +480,7 @@ print.pcornet_summary <- function(x, ...) {
     Description = sapply(sources, function(x) x$description),
     stringsAsFactors = FALSE
   )
-  dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)
+  .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
 
   # =========================================================================
   # CDW Database
@@ -393,7 +523,7 @@ print.pcornet_summary <- function(x, ...) {
   demographic$RAW_RACE <- enterprise_ext$Race
   demographic$RAW_HISPANIC <- enterprise_ext$Ethnicity
 
-  dbWriteTable(con_cdw, "DEMOGRAPHIC", demographic, overwrite = TRUE)
+  .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
 
   # DEATH table
   death_records <- enterprise_ext %>%
@@ -410,7 +540,7 @@ print.pcornet_summary <- function(x, ...) {
       MPI_LID = NA,
       MPI_SRC = NA
     )
-  dbWriteTable(con_cdw, "DEATH", death_records, overwrite = TRUE)
+  .write_table_batched(con_cdw, "DEATH", death_records, overwrite = overwrite, batch_size = batch_size)
 
   # Generate encounters, diagnoses, procedures, labs, prescriptions, vitals
   # (Simplified version - generates random clinical data)
@@ -699,12 +829,12 @@ print.pcornet_summary <- function(x, ...) {
   prescribing <- if (length(prescriptions) > 0) do.call(rbind, prescriptions) else data.frame()
   vital <- if (length(vitals) > 0) do.call(rbind, vitals) else data.frame()
 
-  dbWriteTable(con_cdw, "ENCOUNTER", encounter, overwrite = TRUE)
-  dbWriteTable(con_cdw, "DIAGNOSIS", diagnosis, overwrite = TRUE)
-  if (nrow(procedure) > 0) dbWriteTable(con_cdw, "PROCEDURES", procedure, overwrite = TRUE)
-  if (nrow(lab_result_cm) > 0) dbWriteTable(con_cdw, "LAB_RESULT_CM", lab_result_cm, overwrite = TRUE)
-  if (nrow(prescribing) > 0) dbWriteTable(con_cdw, "PRESCRIBING", prescribing, overwrite = TRUE)
-  if (nrow(vital) > 0) dbWriteTable(con_cdw, "VITAL", vital, overwrite = TRUE)
+  .write_table_batched(con_cdw, "ENCOUNTER", encounter, overwrite = overwrite, batch_size = batch_size)
+  .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(procedure) > 0) .write_table_batched(con_cdw, "PROCEDURES", procedure, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(lab_result_cm) > 0) .write_table_batched(con_cdw, "LAB_RESULT_CM", lab_result_cm, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(prescribing) > 0) .write_table_batched(con_cdw, "PRESCRIBING", prescribing, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(vital) > 0) .write_table_batched(con_cdw, "VITAL", vital, overwrite = overwrite, batch_size = batch_size)
 
   # Provider table
   providers <- data.frame(
@@ -716,30 +846,9 @@ print.pcornet_summary <- function(x, ...) {
     GPC_FLAG = "Y",
     stringsAsFactors = FALSE
   )
-  dbWriteTable(con_cdw, "PROVIDER", providers, overwrite = TRUE)
+  .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
 
-  # Save to disk
-  if (save_to_disk) {
-    cdw_path <- file.path(output_dir, "pcornet_cdw.duckdb")
-    mpi_path <- file.path(output_dir, "mpi.duckdb")
-
-    con_cdw_disk <- dbConnect(duckdb::duckdb(), dbdir = cdw_path)
-    con_mpi_disk <- dbConnect(duckdb::duckdb(), dbdir = mpi_path)
-
-    for (table in dbListTables(con_cdw)) {
-      dbWriteTable(con_cdw_disk, table, dbReadTable(con_cdw, table), overwrite = TRUE)
-    }
-    for (table in dbListTables(con_mpi)) {
-      dbWriteTable(con_mpi_disk, table, dbReadTable(con_mpi, table), overwrite = TRUE)
-    }
-
-    dbDisconnect(con_cdw_disk, shutdown = TRUE)
-    dbDisconnect(con_mpi_disk, shutdown = TRUE)
-
-    cat("Databases saved to:\n")
-    cat("  ", cdw_path, "\n")
-    cat("  ", mpi_path, "\n")
-  }
+  cat("Data written to SQL Server.\n")
 
   list(
     cdw = con_cdw,
@@ -760,7 +869,7 @@ print.pcornet_summary <- function(x, ...) {
 # ENHANCED GENERATION (mode = "enhanced")
 # =============================================================================
 
-.generate_enhanced <- function(n_patients, current_date, profile_weights, save_to_disk, output_dir, sources) {
+.generate_enhanced <- function(n_patients, current_date, profile_weights, con_cdw, con_mpi, overwrite, batch_size, sources) {
   cat("Generating clinically coherent data for", n_patients, "patients...\n")
 
 
@@ -776,10 +885,6 @@ print.pcornet_summary <- function(x, ...) {
   }
 
   CURRENT_DATETIME <- as.POSIXct(paste(current_date, "12:00:00"), tz = "UTC")
-
-  # Create in-memory databases
-  con_cdw <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  con_mpi <- dbConnect(duckdb::duckdb(), dbdir = ":memory:")
 
   # Use PATID format for UIDs to match production schema where UID = CDM_PATID
   uids <- paste0("PAT", sprintf("%07d", 1:n_patients))
@@ -813,7 +918,7 @@ print.pcornet_summary <- function(x, ...) {
   enterprise_records$FirstSdx <- substr(enterprise_records$First, 1, 4)
   enterprise_records$LastSdx <- substr(enterprise_records$Last, 1, 4)
 
-  dbWriteTable(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords", enterprise_records, overwrite = overwrite, batch_size = batch_size)
 
   enterprise_ext <- data.frame(
     Uid = uids,
@@ -851,7 +956,7 @@ print.pcornet_summary <- function(x, ...) {
     )
   }
 
-  dbWriteTable(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = TRUE)
+  .write_table_batched(con_mpi, "EnterpriseRecords_Ext", enterprise_ext, overwrite = overwrite, batch_size = batch_size)
 
   # MPI mappings - uids_in_system is now VARCHAR (PATID format)
   source_names <- names(sources)
@@ -869,7 +974,7 @@ print.pcornet_summary <- function(x, ...) {
   }
   mpi <- do.call(rbind, mpi_records)
   rownames(mpi) <- NULL
-  dbWriteTable(con_mpi, "Mpi", mpi, overwrite = TRUE)
+  .write_table_batched(con_mpi, "Mpi", mpi, overwrite = overwrite, batch_size = batch_size)
 
   mpi_src <- data.frame(
     SRC = source_names,
@@ -877,7 +982,7 @@ print.pcornet_summary <- function(x, ...) {
     Description = sapply(sources, function(x) x$description),
     stringsAsFactors = FALSE
   )
-  dbWriteTable(con_mpi, "MPI_Src", mpi_src, overwrite = TRUE)
+  .write_table_batched(con_mpi, "MPI_Src", mpi_src, overwrite = overwrite, batch_size = batch_size)
 
   # =========================================================================
   # Assign clinical profiles
@@ -922,7 +1027,7 @@ print.pcornet_summary <- function(x, ...) {
     stringsAsFactors = FALSE
   )
 
-  dbWriteTable(con_cdw, "DEMOGRAPHIC", demographic, overwrite = TRUE)
+  .write_table_batched(con_cdw, "DEMOGRAPHIC", demographic, overwrite = overwrite, batch_size = batch_size)
 
   # DEATH table
   death_records <- enterprise_ext %>%
@@ -935,7 +1040,7 @@ print.pcornet_summary <- function(x, ...) {
       GPC_FLAG = "Y",
       UID = Uid
     )
-  dbWriteTable(con_cdw, "DEATH", death_records, overwrite = TRUE)
+  .write_table_batched(con_cdw, "DEATH", death_records, overwrite = overwrite, batch_size = batch_size)
 
   # Generate profile-based clinical data
   cat("\nGenerating clinical data based on profiles...\n")
@@ -1199,12 +1304,12 @@ print.pcornet_summary <- function(x, ...) {
   prescribing <- if (length(all_medications) > 0) do.call(rbind, all_medications) else data.frame()
   vital <- if (length(all_vitals) > 0) do.call(rbind, all_vitals) else data.frame()
 
-  dbWriteTable(con_cdw, "ENCOUNTER", encounter, overwrite = TRUE)
-  dbWriteTable(con_cdw, "DIAGNOSIS", diagnosis, overwrite = TRUE)
-  if (nrow(procedure) > 0) dbWriteTable(con_cdw, "PROCEDURES", procedure, overwrite = TRUE)
-  if (nrow(lab_result_cm) > 0) dbWriteTable(con_cdw, "LAB_RESULT_CM", lab_result_cm, overwrite = TRUE)
-  if (nrow(prescribing) > 0) dbWriteTable(con_cdw, "PRESCRIBING", prescribing, overwrite = TRUE)
-  if (nrow(vital) > 0) dbWriteTable(con_cdw, "VITAL", vital, overwrite = TRUE)
+  .write_table_batched(con_cdw, "ENCOUNTER", encounter, overwrite = overwrite, batch_size = batch_size)
+  .write_table_batched(con_cdw, "DIAGNOSIS", diagnosis, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(procedure) > 0) .write_table_batched(con_cdw, "PROCEDURES", procedure, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(lab_result_cm) > 0) .write_table_batched(con_cdw, "LAB_RESULT_CM", lab_result_cm, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(prescribing) > 0) .write_table_batched(con_cdw, "PRESCRIBING", prescribing, overwrite = overwrite, batch_size = batch_size)
+  if (nrow(vital) > 0) .write_table_batched(con_cdw, "VITAL", vital, overwrite = overwrite, batch_size = batch_size)
 
   # Provider table
   providers <- data.frame(
@@ -1216,30 +1321,9 @@ print.pcornet_summary <- function(x, ...) {
     GPC_FLAG = "Y",
     stringsAsFactors = FALSE
   )
-  dbWriteTable(con_cdw, "PROVIDER", providers, overwrite = TRUE)
+  .write_table_batched(con_cdw, "PROVIDER", providers, overwrite = overwrite, batch_size = batch_size)
 
-  # Save to disk
-  if (save_to_disk) {
-    cdw_path <- file.path(output_dir, "pcornet_cdw.duckdb")
-    mpi_path <- file.path(output_dir, "mpi.duckdb")
-
-    con_cdw_disk <- dbConnect(duckdb::duckdb(), dbdir = cdw_path)
-    con_mpi_disk <- dbConnect(duckdb::duckdb(), dbdir = mpi_path)
-
-    for (table in dbListTables(con_cdw)) {
-      dbWriteTable(con_cdw_disk, table, dbReadTable(con_cdw, table), overwrite = TRUE)
-    }
-    for (table in dbListTables(con_mpi)) {
-      dbWriteTable(con_mpi_disk, table, dbReadTable(con_mpi, table), overwrite = TRUE)
-    }
-
-    dbDisconnect(con_cdw_disk, shutdown = TRUE)
-    dbDisconnect(con_mpi_disk, shutdown = TRUE)
-
-    cat("\nDatabases saved to:\n")
-    cat("  ", cdw_path, "\n")
-    cat("  ", mpi_path, "\n")
-  }
+  cat("\nData written to SQL Server.\n")
 
   list(
     cdw = con_cdw,
@@ -1261,9 +1345,11 @@ print.pcornet_summary <- function(x, ...) {
 # SYNTHEA GENERATION (mode = "synthea")
 # =============================================================================
 
-.generate_from_synthea <- function(synthea_dir, save_to_disk, output_dir) {
-  # Call the internal Synthea import function
-  result <- load_synthea_data(synthea_dir, save_to_disk = save_to_disk, output_dir = output_dir)
+.generate_from_synthea <- function(synthea_dir, con_cdw, con_mpi, overwrite, batch_size,
+                                   tables = NULL) {
+  result <- load_synthea_data(synthea_dir, con_cdw = con_cdw, con_mpi = con_mpi,
+                              overwrite = overwrite, batch_size = batch_size,
+                              tables = tables)
 
   # Get counts for summary
   n_patients <- dbGetQuery(result$cdw, "SELECT COUNT(*) FROM DEMOGRAPHIC")[[1]]

@@ -1,15 +1,40 @@
 # PCORnet CDM Synthetic Database Generator
 
-A synthetic data generator for [PCORnet Common Data Model (CDM)](https://pcornet.org/data/) and Master Patient Index (MPI) databases. Creates DuckDB databases populated with synthetic test data for development and testing purposes.
+A synthetic data generator for [PCORnet Common Data Model (CDM)](https://pcornet.org/data/) and Master Patient Index (MPI) databases. Generates data in R and writes directly to Microsoft SQL Server for development and testing purposes.
 
 ## Features
 
 -   Generates synthetic patient data following PCORnet CDM v6.0 schema structure
--   Creates two linked databases: Clinical Data Warehouse (CDW) and Master Patient Index (MPI)
+-   Creates two linked SQL Server databases: Clinical Data Warehouse (CDW) and Master Patient Index (MPI)
 -   Configurable patient population size
 -   Reproducible data generation with seeded randomization
 -   Includes simulated data quality issues (missing values, temporal inconsistencies)
 -   Three generation modes: clinically coherent profiles, random, or Synthea import
+-   Batched writes for large datasets
+
+## Prerequisites
+
+### R Packages
+
+``` r
+install.packages(c("DBI", "odbc", "dplyr", "lubridate", "tidyr"))
+```
+
+### SQL Server ODBC Driver
+
+Install the Microsoft ODBC Driver for SQL Server:
+- **Windows:** Download from [Microsoft](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
+- **Mac:** `brew install microsoft/mssql-release/msodbcsql17`
+- **Linux:** See [Microsoft documentation](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server) for your distribution
+
+### SQL Server Databases
+
+Create two databases on your SQL Server instance before running:
+
+``` sql
+CREATE DATABASE PCORnet_CDW;
+CREATE DATABASE MPI;
+```
 
 ## Installation
 
@@ -32,7 +57,17 @@ library(DBI)
 library(pcornet.synthetic)
 
 # Generate 100 patients with clinical profiles (default)
-dbs <- create_pcornet_database()
+dbs <- create_pcornet_database(
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
+
+# Or with Windows authentication
+dbs <- create_pcornet_database(
+  server = "localhost",
+  trusted_connection = TRUE
+)
 
 # Access the databases
 dbListTables(dbs$cdw)
@@ -44,13 +79,24 @@ dbListTables(dbs$mpi)
 **Enhanced Mode (Default)** - Clinically coherent data with patient profiles:
 
 ``` r
-dbs <- create_pcornet_database(n_patients = 500)
+dbs <- create_pcornet_database(
+  n_patients = 500,
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 ```
 
 **Random Mode** - Randomly assigned clinical elements:
 
 ``` r
-dbs <- create_pcornet_database(n_patients = 500, mode = "random")
+dbs <- create_pcornet_database(
+  n_patients = 500,
+  mode = "random",
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 ```
 
 **Synthea Mode** - Import from Synthea CSV output:
@@ -58,7 +104,10 @@ dbs <- create_pcornet_database(n_patients = 500, mode = "random")
 ``` r
 dbs <- create_pcornet_database(
   mode = "synthea",
-  synthea_dir = "path/to/synthea/output/csv"
+  synthea_dir = "path/to/synthea/output/csv",
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
 )
 ```
 
@@ -68,7 +117,11 @@ See `synthea/README.md` for Synthea setup instructions.
 
 ``` r
 library(pcornet.synthetic)
-dbs <- load_pcornet_database()
+dbs <- load_pcornet_database(
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 ```
 
 ### View Database Summary
@@ -90,8 +143,19 @@ Main function to generate synthetic PCORnet databases.
 | `mode` | "enhanced" | Generation mode: "enhanced", "random", or "synthea" |
 | `current_date` | `Sys.Date()` | Reference date for data generation |
 | `seed` | 42 | Random seed for reproducibility |
-| `save_to_disk` | TRUE | Save databases to disk files |
-| `output_dir` | "." | Directory for output files |
+| `server` | "localhost" | SQL Server hostname |
+| `cdw_database` | "PCORnet_CDW" | CDW database name |
+| `mpi_database` | "MPI" | MPI database name |
+| `uid` | NULL | SQL Server username |
+| `pwd` | NULL | SQL Server password |
+| `driver` | "ODBC Driver 18 for SQL Server" | ODBC driver name |
+| `port` | 1433 | SQL Server port |
+| `schema` | "dbo" | Target schema |
+| `trusted_connection` | FALSE | Use Windows integrated auth |
+| `connection_string` | NULL | Full ODBC connection string for CDW |
+| `mpi_connection_string` | NULL | Full ODBC connection string for MPI |
+| `overwrite` | TRUE | Overwrite existing tables |
+| `batch_size` | 10000 | Rows per batch for large tables |
 | `synthea_dir` | NULL | Path to Synthea CSV output (required for mode="synthea") |
 | `profile_weights` | NULL | Named list to override default profile distribution |
 | `sources` | NULL | Named list of MPI source systems (see Configuring Source Systems) |
@@ -100,12 +164,20 @@ Main function to generate synthetic PCORnet databases.
 
 ### `load_pcornet_database()`
 
-Load previously generated databases from disk.
+Connect to existing PCORnet databases on SQL Server.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `cdw_path` | "pcornet_cdw.duckdb" | Path to CDW database file |
-| `mpi_path` | "mpi.duckdb" | Path to MPI database file |
+| `server` | "localhost" | SQL Server hostname |
+| `cdw_database` | "PCORnet_CDW" | CDW database name |
+| `mpi_database` | "MPI" | MPI database name |
+| `uid` | NULL | SQL Server username |
+| `pwd` | NULL | SQL Server password |
+| `driver` | "ODBC Driver 18 for SQL Server" | ODBC driver name |
+| `port` | 1433 | SQL Server port |
+| `trusted_connection` | FALSE | Use Windows integrated auth |
+| `connection_string` | NULL | Full ODBC connection string for CDW |
+| `mpi_connection_string` | NULL | Full ODBC connection string for MPI |
 
 ### `get_database_summary()`
 
@@ -122,16 +194,29 @@ Get row counts and statistics for all tables.
 library(pcornet.synthetic)
 
 # Custom patient count
-dbs <- create_pcornet_database(n_patients = 5000)
+dbs <- create_pcornet_database(
+  n_patients = 5000,
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 
 # Different random seed for unique data
-dbs <- create_pcornet_database(seed = 123)
+dbs <- create_pcornet_database(
+  seed = 123,
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 
-# In-memory only (don't save to disk)
-dbs <- create_pcornet_database(save_to_disk = FALSE)
-
-# Save to custom directory
-dbs <- create_pcornet_database(output_dir = "data/output")
+# Custom database names
+dbs <- create_pcornet_database(
+  cdw_database = "MyProject_CDW",
+  mpi_database = "MyProject_MPI",
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
+)
 
 # Custom profile distribution (more diabetics)
 dbs <- create_pcornet_database(
@@ -143,7 +228,10 @@ dbs <- create_pcornet_database(
     respiratory = 0.10,
     mental_health = 0.10,
     multimorbid = 0.05
-  )
+  ),
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
 )
 ```
 
@@ -171,7 +259,10 @@ dbs <- create_pcornet_database(
       description = "Laboratory Information System",
       null_rate = 0.2
     )
-  )
+  ),
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
 )
 ```
 
@@ -250,23 +341,22 @@ dbGetQuery(dbs$cdw, "
 
 ``` r
 library(DBI)
-
-# Option 1: Using DuckDB ATTACH
-dbExecute(dbs$cdw, "ATTACH 'mpi.duckdb' AS mpi")
-dbGetQuery(dbs$cdw, "
-  SELECT d.PATID, e.First, e.Last, d.BIRTH_DATE
-  FROM DEMOGRAPHIC d
-  JOIN mpi.EnterpriseRecords e ON d.UID = e.Uid
-  LIMIT 10
-")
-
-# Option 2: Using dplyr
 library(dplyr)
+
+# Using dplyr to join across CDW and MPI connections
 demographic <- dbReadTable(dbs$cdw, "DEMOGRAPHIC")
 enterprise <- dbReadTable(dbs$mpi, "EnterpriseRecords")
 inner_join(demographic, enterprise, by = c("UID" = "Uid")) %>%
   select(PATID, First, Last, BIRTH_DATE) %>%
   head(10)
+
+# Or use cross-database queries in SQL Server
+# (requires both databases on the same server)
+dbGetQuery(dbs$cdw, "
+  SELECT d.PATID, e.First, e.Last, d.BIRTH_DATE
+  FROM DEMOGRAPHIC d
+  JOIN MPI.dbo.EnterpriseRecords e ON d.UID = e.Uid
+")
 ```
 
 ### Utility Functions
@@ -284,45 +374,6 @@ print_table_summary(dbs$cdw, dbs$mpi)
 summary <- get_database_summary(dbs$cdw, dbs$mpi)
 print(summary)
 ```
-
-### Export to SQL Server
-
-Transfer synthetic data to a Microsoft SQL Server database:
-
-``` r
-# Export with username/password authentication
-export_to_sql_server(
-  dbs,
-  server = "localhost",
-  database = "PCORnet_Dev",
-  uid = "sa",
-  pwd = "YourPassword123"
-)
-
-# Export with Windows integrated authentication
-export_to_sql_server(
-  dbs,
-  server = "localhost",
-  database = "PCORnet_Dev",
-  trusted_connection = TRUE
-)
-
-# Export only specific tables
-export_to_sql_server(
-  dbs,
-  server = "localhost",
-  database = "PCORnet_Dev",
-  uid = "sa",
-  pwd = "YourPassword123",
-  tables = c("DEMOGRAPHIC", "ENCOUNTER", "DIAGNOSIS"),
-  overwrite = TRUE
-)
-```
-
-**Prerequisites:** Install the `odbc` package and Microsoft ODBC Driver 17 for SQL Server:
-- **R package:** `install.packages("odbc")`
-- **Windows:** Download from [Microsoft](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
-- **Mac:** `brew install microsoft/mssql-release/msodbcsql17`
 
 ### Export to CSV
 
@@ -396,7 +447,10 @@ dbs <- create_pcornet_database(
     respiratory = 0.10,
     mental_health = 0.10,
     multimorbid = 0.05
-  )
+  ),
+  server = "localhost",
+  uid = "sa",
+  pwd = "YourPassword123"
 )
 ```
 
@@ -435,7 +489,20 @@ The enhanced and random modes include:
 
 ### Running Tests
 
-This project uses testthat for testing. To run the tests:
+This project uses testthat for testing. Tests require a SQL Server connection. Set these environment variables:
+
+``` bash
+export PCORNET_TEST_SERVER="localhost"
+export PCORNET_TEST_UID="sa"
+export PCORNET_TEST_PWD="YourPassword123"
+# Or for Windows auth:
+export PCORNET_TEST_TRUSTED="TRUE"
+# Optional: custom test database names
+export PCORNET_TEST_CDW_DB="PCORnet_CDW_Test"
+export PCORNET_TEST_MPI_DB="MPI_Test"
+```
+
+Then run:
 
 ``` r
 # Install devtools if needed
@@ -455,9 +522,10 @@ devtools::check()
 
 Tests cover:
 - `create_pcornet_database()` - Structure, patient count, validation, modes, reproducibility
-- `load_pcornet_database()` - Error handling, file loading
+- `load_pcornet_database()` - Error handling, connection loading
 - `get_database_summary()` - Structure, optional parameters
 - Internal helper functions - Date generation, NA sampling
+- Synthea import - Patient/encounter/diagnosis/medication mapping
 
 ## License
 

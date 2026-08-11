@@ -97,10 +97,101 @@ The converter uses these Synthea CSV files:
 |------|----------------|
 | `patients.csv` | DEMOGRAPHIC, EnterpriseRecords |
 | `encounters.csv` | ENCOUNTER |
-| `conditions.csv` | DIAGNOSIS, CONDITION |
+| `conditions.csv` | CONDITION |
+| `claims.csv` | DIAGNOSIS |
 | `medications.csv` | PRESCRIBING |
 | `procedures.csv` | PROCEDURES |
-| `observations.csv` | LAB_RESULT_CM, VITAL |
+| `observations.csv` | LAB_RESULT_CM, VITAL, OBS_CLIN |
+| `immunizations.csv` | IMMUNIZATION |
+| `payer_transitions.csv` + `payers.csv` | ENROLLMENT |
+| `medications.csv` + `mappings/rxnorm_ndc.csv` | DISPENSING |
+
+### How observations are routed
+
+Synthea files every observation under a `CATEGORY`, and the three destination
+tables split along it:
+
+| Rows | Destination | Why |
+|------|-------------|-----|
+| `CATEGORY = laboratory` | `LAB_RESULT_CM` | actual laboratory results |
+| everything else — `vital-signs`, `survey`, `social-history`, `exam`, `procedure`, `imaging`, `therapy` | `OBS_CLIN` | every non-laboratory observation, including body temperature, heart rate, respiratory rate, oxygen saturation and pain scores, none of which have a `VITAL` column |
+| the five LOINC codes VITAL has columns for — height `8302-2`, weight `29463-7`, BMI `39156-5`, systolic `8480-6`, diastolic `8462-4` | `VITAL` **as well as** `OBS_CLIN` | selected by code, not category, so a height filed under any category still lands here |
+| blank `CATEGORY` (QALY, DALY, QOLS) | *not loaded* | simulation scoring metrics, not patient observations, and not LOINC |
+
+Height, weight, BMI and blood pressure are written to **both** `OBS_CLIN` and
+`VITAL`. The duplication is deliberate: PCORnet is deprecating `VITAL`, and
+`OBS_CLIN` is where these measures are headed, so both are populated while that
+transition is underway. Body temperature is the exception — `VITAL` has no
+column for it, so it exists only in `OBS_CLIN`.
+
+Numeric-typed values go to `OBSCLIN_RESULT_NUM` with their units; text-typed
+values go to `OBSCLIN_RESULT_TEXT`. Survey responses get
+`OBSCLIN_SOURCE = 'PR'` (patient-reported), everything else `'HC'`.
+
+### How enrollment is derived
+
+`payer_transitions.csv` records one span per payer per year, so a patient on the
+same plan for a decade produces ten abutting rows. Each unbroken run with the
+same payer is collapsed into the single coverage period it represents.
+
+Spans whose payer is `NO_INSURANCE` are excluded. `ENR_BASIS = 'I'` asserts the
+patient was enrolled in insurance, and the CDM has no column to carry the payer,
+so loading uninsured spans would make them read as insured. The consequence is
+that encounters occurring while a patient was uninsured fall outside any
+enrollment period — that is the source data being represented faithfully, not a
+gap in the mapping.
+
+### How dispensing is derived
+
+`DISPENSING.NDC` is NOT NULL and Synthea codes medications in RxNorm only, so
+`mappings/rxnorm_ndc.csv` supplies the crosswalk. It was built from the NLM
+RxNav API (`/REST/rxcui/{id}/ndcs.json`, falling back to `allhistoricalndcs.json`
+for retired products) and is checked in, so loads are reproducible and need no
+network access. It covers 342 of the 363 RxCUIs Synthea emits, which is 99.87%
+of prescriptions. The 21 misses are recent brand-name combinations and newer
+oncology agents; those prescriptions get no `DISPENSING` row, because NDC cannot
+be null and inventing a code would be worse than omitting the record.
+
+A clinical drug maps to many NDCs, one per manufacturer and package size, and
+Synthea gives nothing to choose between them. Rows rotate through their CUI's
+candidates by position, which spreads manufacturers realistically and stays
+reproducible across runs.
+
+**One row per prescription, not per fill.** Synthea reports how many times a
+prescription was dispensed but never when: it leaves `STOP` blank while a
+prescription is active and sets it equal to `START` for same-day courses, so
+roughly three quarters of fills have no span to spread across and would stack on
+the start date. A row per prescription keeps every `DISPENSE_DATE` a date the
+source actually recorded. The cost is that the fill count goes unrepresented,
+the CDM having no column for it.
+
+`DISPENSE_SUP`, `DISPENSE_AMT`, `DISPENSE_DOSE_DISP` and `DISPENSE_ROUTE` stay
+NULL. Synthea records none of them, and deriving a days supply from
+span ÷ fills would be inference rather than mapping.
+
+### Terminology and value mapping
+
+Smoking status (LOINC 72166-2) is written to `OBS_CLIN` as an observation and
+also crosswalked into `VITAL.SMOKING` via `SYNTHEA_SMOKING_MAP`. `TOBACCO` and
+`TOBACCO_TYPE` stay NULL — Synthea reports smoking only, which says nothing
+about smokeless tobacco.
+
+Synthea does not model medication administration events — no eMAR, no dose
+administered, no route, no administration times — so `MED_ADMIN` has no source
+here and is left empty.
+
+## Loading Selected Tables
+
+Pass `tables` to refresh part of the CDM without rewriting the rest. Source CSVs
+are read only when a requested table needs them, so this also skips the
+multi-gigabyte files:
+
+```r
+load_synthea_data("~/synthea/output/csv", con_cdw, con_mpi,
+                  tables = "IMMUNIZATION")
+```
+
+See `SYNTHEA_LOADABLE_TABLES` for the accepted names.
 
 ## Terminology Mappings
 
@@ -108,6 +199,8 @@ Synthea uses different code systems than PCORnet CDM:
 
 | Synthea | PCORnet | Mapping |
 |---------|---------|---------|
+| CVX | `VX_CODE_TYPE = 'CX'` | direct, no crosswalk needed |
+| RxNorm | `DISPENSING.NDC` | `mappings/rxnorm_ndc.csv` |
 | SNOMED-CT | ICD-10-CM | `mappings/snomed_icd10_common.csv` |
 | Encounter class | ENC_TYPE | `mappings/encounter_type_map.csv` |
 
